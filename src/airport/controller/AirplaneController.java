@@ -11,7 +11,7 @@ import airport.controller.utils.Response;
  * @author Juan Sebastian
  */
 public class AirplaneController {
-    public static Response CreateAirplane(String){
-        
+    public static Response CreateAirplane(String id, String brand, String model, String maxCapacity, String airline){
+        return null;
     }
 }

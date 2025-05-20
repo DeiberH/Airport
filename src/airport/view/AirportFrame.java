@@ -4,6 +4,8 @@
  */
 package airport.view;
 
+import airport.controller.AirplaneController;
+import airport.controller.utils.Response;
 import airport.model.Location;
 import airport.model.Plane;
 import airport.model.Flight;
@@ -1417,7 +1419,7 @@ public class AirportFrame extends javax.swing.JFrame {
 
         }
         for (int i = 1; i < MenuTabbedPane.getTabCount(); i++) {
-                MenuTabbedPane.setEnabledAt(i, true);
+            MenuTabbedPane.setEnabledAt(i, true);
         }
         MenuTabbedPane.setEnabledAt(5, false);
         MenuTabbedPane.setEnabledAt(6, false);
@@ -1463,11 +1465,11 @@ public class AirportFrame extends javax.swing.JFrame {
         String id = AirplaneIDTextField.getText();
         String brand = AirplaneBrandTextField.getText();
         String model = AirplaneModelTextField.getText();
-        int maxCapacity = Integer.parseInt(AirplaneMaxCapacityTextField.getText());
+        String maxCapacity = AirplaneMaxCapacityTextField.getText();
         String airline = AirplaneAirlineTextField.getText();
 
-        this.planes.add(new Plane(id, brand, model, maxCapacity, airline));
-
+        Response response = AirplaneController.CreateAirplane(id, brand, model, maxCapacity, airline);
+        
         this.FlightPlaneComboBox.addItem(id);
     }//GEN-LAST:event_AirplaneCreateButtonActionPerformed
 
@@ -1668,11 +1670,10 @@ public class AirportFrame extends javax.swing.JFrame {
     private void UserSelectComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UserSelectComboBoxActionPerformed
         try {
             String id = UserSelectComboBox.getSelectedItem().toString();
-            if (! id.equals(UserSelectComboBox.getItemAt(0))) {
+            if (!id.equals(UserSelectComboBox.getItemAt(0))) {
                 UpdateInfoIDTextField.setText(id);
                 AddToFlightIDTextField.setText(id);
-            }
-            else{
+            } else {
                 UpdateInfoIDTextField.setText("");
                 AddToFlightIDTextField.setText("");
             }
@@ -1687,7 +1688,6 @@ public class AirportFrame extends javax.swing.JFrame {
     /**
      * @param args the command line arguments
      */
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddToFlightAddButton;
