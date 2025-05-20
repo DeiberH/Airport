@@ -493,6 +493,11 @@ public class AirportFrame extends javax.swing.JFrame {
 
         LocationAirportCreateButton.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         LocationAirportCreateButton.setText("Create");
+        LocationAirportCreateButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                LocationAirportCreateButtonMouseClicked(evt);
+            }
+        });
         LocationAirportCreateButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 LocationAirportCreateButtonActionPerformed(evt);
@@ -893,7 +898,7 @@ public class AirportFrame extends javax.swing.JFrame {
                     .addGroup(UpdateInfoPanelLayout.createSequentialGroup()
                         .addGap(507, 507, 507)
                         .addComponent(UpdateInfoUpdateButton)))
-                .addContainerGap(552, Short.MAX_VALUE))
+                .addContainerGap(598, Short.MAX_VALUE))
         );
         UpdateInfoPanelLayout.setVerticalGroup(
             UpdateInfoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -967,7 +972,7 @@ public class AirportFrame extends javax.swing.JFrame {
                 .addGroup(AddToFlightPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(AddToFlightFlightComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(AddToFlightIDTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(827, Short.MAX_VALUE))
+                .addContainerGap(873, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddToFlightPanelLayout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(AddToFlightAddButton, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1037,7 +1042,7 @@ public class AirportFrame extends javax.swing.JFrame {
             .addGroup(ShowMyFlightsPanelLayout.createSequentialGroup()
                 .addGap(269, 269, 269)
                 .addComponent(ShowMyFlightsScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 590, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(291, Short.MAX_VALUE))
+                .addContainerGap(337, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, ShowMyFlightsPanelLayout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(ShowMyFlightsRefreshButton)
@@ -1101,7 +1106,7 @@ public class AirportFrame extends javax.swing.JFrame {
                     .addGroup(ShowAllPassengersPanelLayout.createSequentialGroup()
                         .addGap(47, 47, 47)
                         .addComponent(ShowAllPassengersScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 1078, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(25, Short.MAX_VALUE))
+                .addContainerGap(71, Short.MAX_VALUE))
         );
         ShowAllPassengersPanelLayout.setVerticalGroup(
             ShowAllPassengersPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1161,7 +1166,7 @@ public class AirportFrame extends javax.swing.JFrame {
                     .addGroup(ShowAllFlightsPanelLayout.createSequentialGroup()
                         .addGap(521, 521, 521)
                         .addComponent(ShowAllFlightsRefreshButton)))
-                .addContainerGap(21, Short.MAX_VALUE))
+                .addContainerGap(67, Short.MAX_VALUE))
         );
         ShowAllFlightsPanelLayout.setVerticalGroup(
             ShowAllFlightsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1220,7 +1225,7 @@ public class AirportFrame extends javax.swing.JFrame {
                     .addGroup(ShowAllPlanesPanelLayout.createSequentialGroup()
                         .addGap(145, 145, 145)
                         .addComponent(ShowAllPlanesScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 816, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(189, Short.MAX_VALUE))
+                .addContainerGap(235, Short.MAX_VALUE))
         );
         ShowAllPlanesPanelLayout.setVerticalGroup(
             ShowAllPlanesPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1279,7 +1284,7 @@ public class AirportFrame extends javax.swing.JFrame {
                     .addGroup(ShowAllLocationsPanelLayout.createSequentialGroup()
                         .addGap(226, 226, 226)
                         .addComponent(ShowAllLocationsScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 652, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(272, Short.MAX_VALUE))
+                .addContainerGap(318, Short.MAX_VALUE))
         );
         ShowAllLocationsPanelLayout.setVerticalGroup(
             ShowAllLocationsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1336,7 +1341,7 @@ public class AirportFrame extends javax.swing.JFrame {
                             .addComponent(DelayFlightHourLabel))
                         .addGap(79, 79, 79)
                         .addGroup(DelayFlightPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(DelayFlightHourComboBox, 0, 105, Short.MAX_VALUE)
+                            .addComponent(DelayFlightHourComboBox, 0, 151, Short.MAX_VALUE)
                             .addComponent(DelayFlightIDComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addGap(820, 820, 820))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, DelayFlightPanelLayout.createSequentialGroup()
@@ -1416,6 +1421,7 @@ public class AirportFrame extends javax.swing.JFrame {
         }
         MenuTabbedPane.setEnabledAt(5, false);
         MenuTabbedPane.setEnabledAt(6, false);
+        MenuTabbedPane.setEnabledAt(7, false);
     }//GEN-LAST:event_AdministratorRadioButtonActionPerformed
 
     private void UserRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UserRadioButtonActionPerformed
@@ -1673,6 +1679,10 @@ public class AirportFrame extends javax.swing.JFrame {
         } catch (Exception e) {
         }
     }//GEN-LAST:event_UserSelectComboBoxActionPerformed
+
+    private void LocationAirportCreateButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LocationAirportCreateButtonMouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_LocationAirportCreateButtonMouseClicked
 
     /**
      * @param args the command line arguments

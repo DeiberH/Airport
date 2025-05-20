@@ -799,6 +799,7 @@
                     <Property name="text" type="java.lang.String" value="Create"/>
                   </Properties>
                   <Events>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="LocationAirportCreateButtonMouseClicked"/>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="LocationAirportCreateButtonActionPerformed"/>
                   </Events>
                 </Component>
@@ -1376,7 +1377,7 @@
                                   <Component id="UpdateInfoUpdateButton" min="-2" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <EmptySpace pref="552" max="32767" attributes="0"/>
+                          <EmptySpace pref="598" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -1607,7 +1608,7 @@
                               <Component id="AddToFlightFlightComboBox" min="-2" max="-2" attributes="0"/>
                               <Component id="AddToFlightIDTextField" min="-2" pref="130" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace pref="827" max="32767" attributes="0"/>
+                          <EmptySpace pref="873" max="32767" attributes="0"/>
                       </Group>
                       <Group type="102" alignment="1" attributes="0">
                           <EmptySpace max="32767" attributes="0"/>
@@ -1707,7 +1708,7 @@
                       <Group type="102" attributes="0">
                           <EmptySpace min="-2" pref="269" max="-2" attributes="0"/>
                           <Component id="ShowMyFlightsScrollPane" min="-2" pref="590" max="-2" attributes="0"/>
-                          <EmptySpace pref="291" max="32767" attributes="0"/>
+                          <EmptySpace pref="337" max="32767" attributes="0"/>
                       </Group>
                       <Group type="102" alignment="1" attributes="0">
                           <EmptySpace max="32767" attributes="0"/>
@@ -1788,7 +1789,7 @@
                                   <Component id="ShowAllPassengersScrollPane" min="-2" pref="1078" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <EmptySpace pref="25" max="32767" attributes="0"/>
+                          <EmptySpace pref="71" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -1868,7 +1869,7 @@
                                   <Component id="ShowAllFlightsRefreshButton" min="-2" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <EmptySpace pref="21" max="32767" attributes="0"/>
+                          <EmptySpace pref="67" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -1949,7 +1950,7 @@
                                   <Component id="ShowAllPlanesScrollPane" min="-2" pref="816" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <EmptySpace pref="189" max="32767" attributes="0"/>
+                          <EmptySpace pref="235" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -2025,7 +2026,7 @@
                                   <Component id="ShowAllLocationsScrollPane" min="-2" pref="652" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <EmptySpace pref="272" max="32767" attributes="0"/>
+                          <EmptySpace pref="318" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -2103,7 +2104,7 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="79" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="DelayFlightHourComboBox" pref="105" max="32767" attributes="0"/>
+                                      <Component id="DelayFlightHourComboBox" pref="151" max="32767" attributes="0"/>
                                       <Component id="DelayFlightIDComboBox" max="32767" attributes="0"/>
                                   </Group>
                               </Group>
