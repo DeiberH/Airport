@@ -1458,7 +1458,7 @@ public class AirportFrame extends javax.swing.JFrame {
         String country = PassengerCountryTextField.getText();
 
         Response response = PassengerController.createPassenger(id, firstname, lastname, year, month, day, phoneCode, phone, country);
-        
+
         if (response.getStatus() >= 500) {
             JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         } else if (response.getStatus() >= 400) {
@@ -1466,10 +1466,20 @@ public class AirportFrame extends javax.swing.JFrame {
         } else {
             JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE);
 
-            
+            PassengerIDTextField.setText("");
+            PassengerFirstNameTextField.setText("");
+            PassengerLastNameTextField.setText("");
+            PassengerBirthdateYearTextField.setText("");
+            PassengerMonthComboBox.setSelectedIndex(0);
+            PassengerDayComboBox.setSelectedIndex(0);
+            PassengerPhonePrefixTextField.setText("");
+            PassengerPhoneTextField.setText("");
+            PassengerCountryTextField.setText("");
+
+            this.UserSelectComboBox.addItem("" + id);
         }
-        
-        this.UserSelectComboBox.addItem("" + id);
+
+
     }//GEN-LAST:event_PassangerRegisterButtonActionPerformed
 
     private void AirplaneCreateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AirplaneCreateButtonActionPerformed
@@ -1494,9 +1504,9 @@ public class AirportFrame extends javax.swing.JFrame {
             AirplaneModelTextField.setText("");
             AirplaneMaxCapacityTextField.setText("");
             AirplaneAirlineTextField.setText("");
-        }
 
-        this.FlightPlaneComboBox.addItem(id);
+            this.FlightPlaneComboBox.addItem(id);
+        }
     }//GEN-LAST:event_AirplaneCreateButtonActionPerformed
 
     private void LocationAirportCreateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LocationAirportCreateButtonActionPerformed
@@ -1523,11 +1533,11 @@ public class AirportFrame extends javax.swing.JFrame {
             LocationAirportCountryTextField.setText("");
             LocationAirportLatitudeTextField.setText("");
             LocationAirportLongitudeTextField.setText("");
-        }
-        this.FlightDepartureLocationComboBox.addItem(id);
-        this.FlightArrivalLocationComboBox.addItem(id);
-        this.FlightScaleLocationComboBox.addItem(id);
 
+            this.FlightDepartureLocationComboBox.addItem(id);
+            this.FlightArrivalLocationComboBox.addItem(id);
+            this.FlightScaleLocationComboBox.addItem(id);
+        }
     }//GEN-LAST:event_LocationAirportCreateButtonActionPerformed
 
     private void FlightCreateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FlightCreateButtonActionPerformed

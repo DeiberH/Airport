@@ -21,7 +21,7 @@ public class PassengerController {
         try {
             long idlong, phoneLong;
             int yearInt, monthInt, dayInt, pcInt;
-            LocalDate birthDate;
+            LocalDate birthDate, now;
 
             if (id.trim().isEmpty() || id == null) {
                 return new Response("Id must not be empty", Status.BAD_REQUEST);
@@ -64,7 +64,11 @@ public class PassengerController {
             }
 
             try {
+                now = LocalDate.now();
                 birthDate = LocalDate.of(yearInt, monthInt, dayInt);
+                if (birthDate.isAfter(now)) {
+                    return new Response("Date must be Before Today", Status.BAD_REQUEST);
+                }
             } catch (DateTimeException ex) {
                 return new Response("Date Format is not Valid", Status.BAD_REQUEST);
             }
