@@ -39,11 +39,21 @@ public class Storage {
     
     public boolean addPlane(Plane plane) {
         for (Plane p : this.planes) {
-            if (p.getId() == plane.getId()) {
+            if (Integer.parseInt(p.getId()) == Integer.parseInt(plane.getId())) {
                 return false;
             }
         }
         this.planes.add(plane);
+        return true;
+    }
+    
+    public boolean addLocation(Location local) {
+        for (Location l : this.locations) {
+            if (Integer.parseInt(l.getAirportId()) == Integer.parseInt(local.getAirportId())) {
+                return false;
+            }
+        }
+        this.locations.add(local);
         return true;
     }
 }

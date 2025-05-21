@@ -4,7 +4,8 @@
  */
 package airport.view;
 
-import airport.controller.AirplaneController;
+import airport.controller.LocationController;
+import airport.controller.PlaneController;
 import airport.controller.utils.Response;
 import airport.model.Location;
 import airport.model.Plane;
@@ -15,6 +16,7 @@ import java.awt.Color;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 
@@ -418,7 +420,7 @@ public class AirportFrame extends javax.swing.JFrame {
         AirplaneBrandLabel.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneBrandLabel.setText("Brand:");
         AirplaneRegPanel.add(AirplaneBrandLabel);
-        AirplaneBrandLabel.setBounds(53, 157, 52, 25);
+        AirplaneBrandLabel.setBounds(53, 157, 50, 25);
 
         AirplaneBrandTextField.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneRegPanel.add(AirplaneBrandTextField);
@@ -431,7 +433,7 @@ public class AirportFrame extends javax.swing.JFrame {
         AirplaneModelLabel.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneModelLabel.setText("Model:");
         AirplaneRegPanel.add(AirplaneModelLabel);
-        AirplaneModelLabel.setBounds(53, 216, 57, 25);
+        AirplaneModelLabel.setBounds(53, 216, 55, 25);
 
         AirplaneMaxCapacityTextField.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneRegPanel.add(AirplaneMaxCapacityTextField);
@@ -440,7 +442,7 @@ public class AirportFrame extends javax.swing.JFrame {
         AirplaneMaxCapacityLabel.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneMaxCapacityLabel.setText("Max Capacity:");
         AirplaneRegPanel.add(AirplaneMaxCapacityLabel);
-        AirplaneMaxCapacityLabel.setBounds(53, 276, 114, 25);
+        AirplaneMaxCapacityLabel.setBounds(53, 276, 109, 25);
 
         AirplaneAirlineTextField.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneRegPanel.add(AirplaneAirlineTextField);
@@ -1468,8 +1470,22 @@ public class AirportFrame extends javax.swing.JFrame {
         String maxCapacity = AirplaneMaxCapacityTextField.getText();
         String airline = AirplaneAirlineTextField.getText();
 
-        Response response = AirplaneController.CreateAirplane(id, brand, model, maxCapacity, airline);
-        
+        Response response = PlaneController.CreatePlane(id, brand, model, maxCapacity, airline);
+
+        if (response.getStatus() >= 500) {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
+        } else if (response.getStatus() >= 400) {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE);
+
+            AirplaneIDTextField.setText("");
+            AirplaneBrandTextField.setText("");
+            AirplaneModelTextField.setText("");
+            AirplaneMaxCapacityTextField.setText("");
+            AirplaneAirlineTextField.setText("");
+        }
+
         this.FlightPlaneComboBox.addItem(id);
     }//GEN-LAST:event_AirplaneCreateButtonActionPerformed
 
@@ -1479,14 +1495,29 @@ public class AirportFrame extends javax.swing.JFrame {
         String name = LocationAirportNameTextField.getText();
         String city = LocationAirportCityTextField.getText();
         String country = LocationAirportCountryTextField.getText();
-        double latitude = Double.parseDouble(LocationAirportLatitudeTextField.getText());
-        double longitude = Double.parseDouble(LocationAirportLongitudeTextField.getText());
+        String latitude = LocationAirportLatitudeTextField.getText();
+        String longitude = LocationAirportLongitudeTextField.getText();
 
-        this.locations.add(new Location(id, name, city, country, latitude, longitude));
+        Response response = LocationController.createLocation(id, name, city, country, latitude, longitude);
 
+        if (response.getStatus() >= 500) {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
+        } else if (response.getStatus() >= 400) {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE);
+
+            LocationAirportIDTextField.setText("");
+            LocationAirportNameTextField.setText("");
+            LocationAirportCityTextField.setText("");
+            LocationAirportCountryTextField.setText("");
+            LocationAirportLatitudeTextField.setText("");
+            LocationAirportLongitudeTextField.setText("");
+        }
         this.FlightDepartureLocationComboBox.addItem(id);
         this.FlightArrivalLocationComboBox.addItem(id);
         this.FlightScaleLocationComboBox.addItem(id);
+
     }//GEN-LAST:event_LocationAirportCreateButtonActionPerformed
 
     private void FlightCreateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FlightCreateButtonActionPerformed
