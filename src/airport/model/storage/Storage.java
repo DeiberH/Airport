@@ -56,4 +56,14 @@ public class Storage {
         this.locations.add(local);
         return true;
     }
+    
+    public boolean addPassenger(Passenger passenger) {
+        for (Passenger p : this.passengers) {
+            if (p.getId() == passenger.getId()) {
+                return false;
+            }
+        }
+        this.passengers.add(passenger);
+        return true;
+    }
 }

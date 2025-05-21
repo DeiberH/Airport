@@ -5,6 +5,7 @@
 package airport.view;
 
 import airport.controller.LocationController;
+import airport.controller.PassengerController;
 import airport.controller.PlaneController;
 import airport.controller.utils.Response;
 import airport.model.Location;
@@ -1446,19 +1447,28 @@ public class AirportFrame extends javax.swing.JFrame {
 
     private void PassangerRegisterButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PassangerRegisterButtonActionPerformed
         // TODO add your handling code here:
-        long id = Long.parseLong(PassengerIDTextField.getText());
+        String id = PassengerIDTextField.getText();
         String firstname = PassengerFirstNameTextField.getText();
         String lastname = PassengerLastNameTextField.getText();
-        int year = Integer.parseInt(PassengerBirthdateYearTextField.getText());
-        int month = Integer.parseInt(PassengerMonthComboBox.getItemAt(PassengerMonthComboBox.getSelectedIndex()));
-        int day = Integer.parseInt(PassengerDayComboBox.getItemAt(PassengerDayComboBox.getSelectedIndex()));
-        int phoneCode = Integer.parseInt(PassengerPhonePrefixTextField.getText());
-        long phone = Long.parseLong(PassengerPhoneTextField.getText());
+        String year = PassengerBirthdateYearTextField.getText();
+        String month = PassengerMonthComboBox.getItemAt(PassengerMonthComboBox.getSelectedIndex());
+        String day = PassengerDayComboBox.getItemAt(PassengerDayComboBox.getSelectedIndex());
+        String phoneCode = PassengerPhonePrefixTextField.getText();
+        String phone = PassengerPhoneTextField.getText();
         String country = PassengerCountryTextField.getText();
 
-        LocalDate birthDate = LocalDate.of(year, month, day);
+        Response response = PassengerController.createPassenger(id, firstname, lastname, year, month, day, phoneCode, phone, country);
+        
+        if (response.getStatus() >= 500) {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
+        } else if (response.getStatus() >= 400) {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE);
 
-        this.passengers.add(new Passenger(id, firstname, lastname, birthDate, phoneCode, phone, country));
+            
+        }
+        
         this.UserSelectComboBox.addItem("" + id);
     }//GEN-LAST:event_PassangerRegisterButtonActionPerformed
 
