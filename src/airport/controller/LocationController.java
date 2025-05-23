@@ -7,7 +7,7 @@ package airport.controller;
 import airport.controller.utils.Response;
 import airport.controller.utils.Status;
 import airport.model.Location;
-import airport.model.storage.Storage;
+import airport.model.storage.StorageLocation;
 import java.math.BigDecimal;
 
 /**
@@ -81,7 +81,7 @@ public class LocationController {
                 return new Response("Longitude must be numeric", Status.BAD_REQUEST);
             }
 
-            Storage storage = Storage.getInstance();
+            StorageLocation storage = StorageLocation.getInstance();
             if (!storage.addLocation(new Location(id, name, city, country, latDob, lonDob))) {
                 return new Response("A location with that id already exists", Status.BAD_REQUEST);
             }

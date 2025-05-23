@@ -7,7 +7,7 @@ package airport.controller;
 import airport.controller.utils.Response;
 import airport.controller.utils.Status;
 import airport.model.Plane;
-import airport.model.storage.Storage;
+import airport.model.storage.StoragePlane;
 
 /**
  *
@@ -52,7 +52,7 @@ public class PlaneController {
 
             try {
                 capInt = Integer.parseInt(maxCapacity);
-                if (capInt < 0) {
+                if (capInt <= 0) {
                     return new Response("Capacity must be positive", Status.BAD_REQUEST);
                 }
             } catch (NumberFormatException ex) {
@@ -63,7 +63,7 @@ public class PlaneController {
                 return new Response("Airline must not be empty", Status.BAD_REQUEST);
             }
 
-            Storage storage = Storage.getInstance();
+            StoragePlane storage = StoragePlane.getInstance();
             if (!storage.addPlane(new Plane(id, brand, model, capInt, airline))) {
                 return new Response("A plane with that id already exists", Status.BAD_REQUEST);
             }

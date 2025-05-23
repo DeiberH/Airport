@@ -7,7 +7,7 @@ package airport.controller;
 import airport.controller.utils.Response;
 import airport.controller.utils.Status;
 import airport.model.Passenger;
-import airport.model.storage.Storage;
+import airport.model.storage.StoragePassenger;
 import java.time.LocalDate;
 import java.time.DateTimeException;
 
@@ -54,8 +54,6 @@ public class PassengerController {
 
             try {
                 yearInt = Integer.parseInt(year);
-                monthInt = Integer.parseInt(month);
-                dayInt = Integer.parseInt(day);
                 if (yearInt < 1900) {
                     return new Response("Year must be valid [>=1900]", Status.BAD_REQUEST);
                 }
@@ -64,6 +62,8 @@ public class PassengerController {
             }
 
             try {
+                monthInt = Integer.parseInt(month);
+                dayInt = Integer.parseInt(day);
                 now = LocalDate.now();
                 birthDate = LocalDate.of(yearInt, monthInt, dayInt);
                 if (birthDate.isAfter(now)) {
@@ -111,11 +111,111 @@ public class PassengerController {
                 return new Response("Country must not be empty", Status.BAD_REQUEST);
             }
            
-            Storage storage = Storage.getInstance();
+            StoragePassenger storage = StoragePassenger.getInstance();
             if (!storage.addPassenger(new Passenger(idlong, firstname, lastname, birthDate, pcInt, phoneLong, country))) {
                 return new Response("A Passenger with that id already exists", Status.BAD_REQUEST);
             }
             return new Response("Passenger created successfully", Status.CREATED);
+        } catch (Exception ex) {
+            return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+    public static Response updatePassenger(String id, String firstname, String lastname, String year, String month, String day, String phoneCode, String phone, String country){
+        try {
+            long idlong;
+            int yearInt, monthInt, dayInt, pcInt, phoneInt;
+            LocalDate birthDate, now;
+            
+            if (id.trim().isEmpty() || id == null) {
+                return new Response("User Hasn't been selected yet", Status.NOT_FOUND);
+            }
+            
+            StoragePassenger storage = StoragePassenger.getInstance();
+            idlong = Long.parseLong(id);
+            Passenger passenger = storage.getPassenger(idlong);
+            if (passenger == null) {
+                return new Response("Person not found", Status.NOT_FOUND);
+            }
+            
+            if (firstname.trim().isEmpty() || firstname == null) {
+                return new Response("Firstname must not be empty", Status.BAD_REQUEST);
+            }
+
+            if (lastname.trim().isEmpty() || lastname == null) {
+                return new Response("Lastname must not be empty", Status.BAD_REQUEST);
+            }
+
+            if (year.trim().isEmpty() || year == null) {
+                return new Response("Lastname must not be empty", Status.BAD_REQUEST);
+            }
+
+            try {
+                yearInt = Integer.parseInt(year);
+                if (yearInt < 1900) {
+                    return new Response("Year must be valid [>=1900]", Status.BAD_REQUEST);
+                }
+            } catch (NumberFormatException ex) {
+                return new Response("Year must be numeric", Status.BAD_REQUEST);
+            }
+
+            try {
+                monthInt = Integer.parseInt(month);
+                dayInt = Integer.parseInt(day);
+                now = LocalDate.now();
+                birthDate = LocalDate.of(yearInt, monthInt, dayInt);
+                if (birthDate.isAfter(now)) {
+                    return new Response("Date must be Before Today", Status.BAD_REQUEST);
+                }
+            } catch (DateTimeException ex) {
+                return new Response("Date Format is not Valid", Status.BAD_REQUEST);
+            }
+
+            if (phoneCode.trim().isEmpty() || phoneCode == null) {
+                return new Response("PhoneCode must not be empty", Status.BAD_REQUEST);
+            }
+
+            if (phoneCode.length() > 3) {
+                return new Response("Phonecode must be 3 digits or less", Status.BAD_REQUEST);
+            }
+            
+            try {
+                pcInt = Integer.parseInt(phoneCode);
+                if (pcInt < 0) {
+                    return new Response("Phonecode must be positive", Status.BAD_REQUEST);
+                }
+            } catch (NumberFormatException ex) {
+                return new Response("Phonecode must be numeric", Status.BAD_REQUEST);
+            }
+            
+            if (phone.trim().isEmpty() || phone == null) {
+                return new Response("Phone must not be empty", Status.BAD_REQUEST);
+            }
+
+            if (phone.length() > 11) {
+                return new Response("Phone must be 11 digits or less", Status.BAD_REQUEST);
+            }
+            
+            try {
+                phoneInt = Integer.parseInt(phoneCode);
+                if (phoneInt < 0) {
+                    return new Response("Phone must be positive", Status.BAD_REQUEST);
+                }
+            } catch (NumberFormatException ex) {
+                return new Response("Phone must be numeric", Status.BAD_REQUEST);
+            }
+            
+            if (country.trim().isEmpty() || country == null) {
+                return new Response("Country must not be empty", Status.BAD_REQUEST);
+            }
+            //  id,  firstname,  lastname,  year,  month,  day,  phoneCode,  phone,  country
+            passenger.setFirstname(firstname);
+            passenger.setLastname(lastname);
+            passenger.setBirthDate(birthDate);
+            passenger.setCountryPhoneCode(phoneInt);
+            passenger.setPhone(idlong);
+            passenger.setCountry(country);
+            
+            return new Response("Passenger updated successfully", Status.CREATED);
         } catch (Exception ex) {
             return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
         }
