@@ -4,10 +4,6 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/C:/Users/deibe/Documents/NetBeansProjects/Airport/src/airport/view/AirportFrame.java</file>
-            <file>file:/C:/Users/deibe/Documents/NetBeansProjects/Airport/src/airport/controller/FlightController.java</file>
-            <file>file:/C:/Users/deibe/Documents/NetBeansProjects/Airport/src/airport/controller/PlaneController.java</file>
-            <file>file:/C:/Users/deibe/Documents/NetBeansProjects/Airport/src/airport/model/storage/Storage.java</file>
-            <file>file:/C:/Users/deibe/Documents/NetBeansProjects/Airport/src/airport/model/Flight.java</file>
         </group>
     </open-files>
 </project-private>
