@@ -6,8 +6,6 @@ package airport.model.storage;
 
 import airport.model.Plane;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 
 /**
  *
@@ -46,12 +44,5 @@ public class StoragePlane {
             }
         }
         return null;
-    }
-
-    public List<Plane> getAllPlanes() {
-        // Sort by ID: "Los aviones se deben obtener de manera ordenada (respecto a su id)."
-        ArrayList<Plane> sortedPlanes = new ArrayList<>(this.planes);
-        sortedPlanes.sort(Comparator.comparing(Plane::getId));
-        return sortedPlanes; // Return the sorted copy
     }
 }
