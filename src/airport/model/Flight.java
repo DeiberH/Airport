@@ -63,6 +63,10 @@ public class Flight {
     public String getId() {
         return id;
     }
+    
+    public ArrayList<Passenger> getPassangers () {
+        return this.passengers;
+    }
 
     public Location getDepartureLocation() {
         return departureLocation;

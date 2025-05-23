@@ -8,9 +8,11 @@ import airport.controller.utils.Response;
 import airport.controller.utils.Status;
 import airport.model.Flight;
 import airport.model.Location;
+import airport.model.Passenger;
 import airport.model.Plane;
 import airport.model.storage.StorageFlight;
 import airport.model.storage.StorageLocation;
+import airport.model.storage.StoragePassenger;
 import airport.model.storage.StoragePlane;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
@@ -22,7 +24,7 @@ import java.time.LocalDateTime;
 // CORREGIR LOS ERRORES DE LOS PARSEINT DEL TIEMPO
 public class FlightController {
 
-    public static Response createPassenger(String id, String planeId, String departureLocationId, String arrivalLocationId, String scaleLocationId, String year, String month, String day, String hour, String minutes, String hoursDurationsArrival, String minutesDurationsArrival, String hoursDurationsScale, String minutesDurationsScale) {
+    public static Response createFlight(String id, String planeId, String departureLocationId, String arrivalLocationId, String scaleLocationId, String year, String month, String day, String hour, String minutes, String hoursDurationsArrival, String minutesDurationsArrival, String hoursDurationsScale, String minutesDurationsScale) {
         try {
             int yearInt, monthInt, dayInt, hoursInt, minutesInt, hourdaInt, minutesdaInt, hourdsInt, minutesdsInt;
             LocalDateTime departureDate, now;
@@ -122,24 +124,74 @@ public class FlightController {
 
     public static Response addPassengertoFlight(String passengerId, String FlightId) {
         try {
-            long idlong;
+            Passenger passenger = null;
             
             if (passengerId.trim().isEmpty() || passengerId == null) {
-                return new Response("Id must not be empty", Status.BAD_REQUEST);
+                return new Response("User Hasn't been selected", Status.BAD_REQUEST);
             }
-
-            if (passengerId.length() > 15) {
-                return new Response("Id must less than 15 digits", Status.BAD_REQUEST);
-            }
-
-            try {
-                idlong = Long.parseLong(passengerId);
-                if (idlong < 0) {
-                    return new Response("Id must be positive", Status.BAD_REQUEST);
+            
+            StoragePassenger storagep = StoragePassenger.getInstance();
+            
+            long idlong = Long.parseLong(passengerId);
+            for (Passenger p : storagep.getPassengers()) {
+                if (p.getId() == idlong) {
+                    passenger = p;
                 }
-            } catch (NumberFormatException ex) {
-                return new Response("Id must be numeric", Status.BAD_REQUEST);
             }
+            
+            if (passenger == null) {
+                return new Response("Passenger was not found", Status.BAD_REQUEST);
+            }
+            
+            StorageFlight storagef = StorageFlight.getInstance();
+            
+            for (Flight f : storagef.getFlights()) {
+                if (f.getId().equals(FlightId)) {
+                    for (Passenger p : f.getPassangers()) {
+                        if (p.getId() == passenger.getId()) {
+                            return new Response("Passenger alredy added to flight", Status.BAD_REQUEST);
+                        }
+                        
+                    }
+                    f.addPassenger(passenger);
+                    return new Response("Passenger added to Flight successfully", Status.OK);
+                }
+            }
+            return new Response("Flight not found", Status.NOT_FOUND);
+        } catch (Exception ex) {
+            return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    public static Response delayFlight(String flightId, String hour, String minutes){
+        try {
+            int hourInt, minutesInt;
+            Flight flight = null;
+            
+            StorageFlight storage = StorageFlight.getInstance();
+            
+            for (Flight f : storage.getFlights()) {
+                if (f.getId().equals(flightId)) {
+                    flight = f;
+                }
+            }
+            
+            if (flight == null) {
+                return new Response("Flight not found", Status.NOT_FOUND);
+            }
+            
+            try {
+                hourInt = Integer.parseInt(hour);
+                minutesInt = Integer.parseInt(minutes);
+                if (hourInt == 0 && minutesInt == 0) {
+                    return new Response("Delay must be longer than 00:00", Status.BAD_REQUEST);
+                }
+       
+            } catch (NumberFormatException e) {
+                return new Response("Hour or Minutes were not selected", Status.BAD_REQUEST);
+            }
+            
+            flight.delay(hourInt, minutesInt);
             return new Response("Passenger added to Flight successfully", Status.OK);
         } catch (Exception ex) {
             return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);

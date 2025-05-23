@@ -1559,7 +1559,7 @@ public class AirportFrame extends javax.swing.JFrame {
         String hoursDurationsScale = FlightScaleHourComboBox.getItemAt(FlightScaleHourComboBox.getSelectedIndex());
         String minutesDurationsScale = FlightScaleMinuteComboBox.getItemAt(FlightScaleMinuteComboBox.getSelectedIndex());
 
-        Response response = FlightController.createPassenger(id, planeId, departureLocationId, arrivalLocationId, scaleLocationId, year, month, day, hour, minutes, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale);
+        Response response = FlightController.createFlight(id, planeId, departureLocationId, arrivalLocationId, scaleLocationId, year, month, day, hour, minutes, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale);
 
         if (response.getStatus() >= 500) {
             JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
@@ -1584,6 +1584,7 @@ public class AirportFrame extends javax.swing.JFrame {
             FlightScaleMinuteComboBox.setSelectedIndex(0);
 
             this.AddToFlightFlightComboBox.addItem(id);
+            this.DelayFlightIDComboBox.addItem(id);
         }
     }//GEN-LAST:event_FlightCreateButtonActionPerformed
 
@@ -1599,7 +1600,7 @@ public class AirportFrame extends javax.swing.JFrame {
         String phone = UpdateInfoPhoneTextField.getText();
         String country = UpdateInfoCountryTextField.getText();
 
-        Response response = PassengerController.createPassenger(id, firstname, lastname, year, month, day, phoneCode, phone, country);
+        Response response = PassengerController.updatePassenger(id, firstname, lastname, year, month, day, phoneCode, phone, country);
 
         if (response.getStatus() >= 500) {
             JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
@@ -1617,35 +1618,28 @@ public class AirportFrame extends javax.swing.JFrame {
             PassengerPhonePrefixTextField.setText("");
             PassengerPhoneTextField.setText("");
             PassengerCountryTextField.setText("");
-
-            this.UserSelectComboBox.addItem("" + id);
         }
 
-        
+
     }//GEN-LAST:event_UpdateInfoUpdateButtonActionPerformed
 
     private void AddToFlightAddButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddToFlightAddButtonActionPerformed
         // TODO add your handling code here:
-        long passengerId = Long.parseLong(AddToFlightIDTextField.getText());
+        String passengerId = AddToFlightIDTextField.getText();
         String flightId = AddToFlightFlightComboBox.getItemAt(AddToFlightFlightComboBox.getSelectedIndex());
 
-        Passenger passenger = null;
-        Flight flight = null;
+        Response response = FlightController.addPassengertoFlight(passengerId, flightId);
 
-        for (Passenger p : this.passengers) {
-            if (p.getId() == passengerId) {
-                passenger = p;
-            }
+        if (response.getStatus() >= 500) {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
+        } else if (response.getStatus() >= 400) {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE);
+
+            AddToFlightIDTextField.setText("");
+            AddToFlightFlightComboBox.setSelectedIndex(0);
         }
-
-        for (Flight f : this.flights) {
-            if (flightId.equals(f.getId())) {
-                flight = f;
-            }
-        }
-
-        passenger.addFlight(flight);
-        flight.addPassenger(passenger);
     }//GEN-LAST:event_AddToFlightAddButtonActionPerformed
 
     private void DelayFlightDelayButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DelayFlightDelayButtonActionPerformed
