@@ -6,6 +6,8 @@ package airport.model.storage;
 
 import airport.model.Passenger;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  *
@@ -44,5 +46,13 @@ public class StoragePassenger {
             }
         }
         return null;
+    }
+
+    public List<Passenger> getAllPassengers() {
+        // Sort by ID as per requirements: "Los pasajeros se deben obtener de manera ordenada (respecto a su id)."
+        // Create a temporary list to sort, or sort a copy
+        ArrayList<Passenger> sortedPassengers = new ArrayList<>(this.passengers);
+        sortedPassengers.sort(Comparator.comparingLong(Passenger::getId));
+        return sortedPassengers; // Return the sorted copy
     }
 }
