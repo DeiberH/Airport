@@ -8,6 +8,8 @@ import airport.controller.utils.Response;
 import airport.controller.utils.Status;
 import airport.model.Plane;
 import airport.model.storage.StoragePlane;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -45,7 +47,7 @@ public class PlaneController {
             if (model.trim().isEmpty() || model == null) {
                 return new Response("Model must not be empty", Status.BAD_REQUEST);
             }
-            
+
             if (maxCapacity.trim().isEmpty() || maxCapacity == null) {
                 return new Response("Airline must not be empty", Status.BAD_REQUEST);
             }
@@ -70,6 +72,20 @@ public class PlaneController {
             return new Response("Airplane created successfully", Status.CREATED);
         } catch (Exception ex) {
             return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public static Response getAllPlanesForTable() {
+        try {
+            List<Plane> planes = StoragePlane.getInstance().getAllPlanes();
+            // Storage should return sorted copy
+            if (planes.isEmpty()) {
+                return new Response("No planes found.", Status.OK, new ArrayList<Plane>());
+            }
+            return new Response("Planes retrieved successfully.", Status.OK, planes);
+        } catch (Exception ex) {
+            // ex.printStackTrace();
+            return new Response("Error retrieving planes: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 }

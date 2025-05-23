@@ -9,6 +9,8 @@ import airport.controller.utils.Status;
 import airport.model.Location;
 import airport.model.storage.StorageLocation;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -27,7 +29,7 @@ public class LocationController {
             if (id.length() != 3) {
                 return new Response("Id must contain 3 uppercase letters", Status.BAD_REQUEST);
             }
-                       
+
             for (int i = 0; i < 3; i++) {
                 char c = id.charAt(i);
                 if (!Character.isUpperCase(c)) {
@@ -42,11 +44,11 @@ public class LocationController {
             if (city.trim().isEmpty() || city == null) {
                 return new Response("City must not be empty", Status.BAD_REQUEST);
             }
-            
+
             if (country.trim().isEmpty() || country == null) {
                 return new Response("Country must not be empty", Status.BAD_REQUEST);
             }
-            
+
             if (latitude.trim().isEmpty() || latitude == null) {
                 return new Response("Country must not be empty", Status.BAD_REQUEST);
             }
@@ -54,7 +56,7 @@ public class LocationController {
             try {
                 BigDecimal lat = new BigDecimal(latitude);
                 latDob = Double.parseDouble(latitude);
-                if (lat.scale() > 4){
+                if (lat.scale() > 4) {
                     return new Response("Latitude must have less than 4 decimals", Status.BAD_REQUEST);
                 }
                 if (latDob > 90 || latDob < -90) {
@@ -63,15 +65,15 @@ public class LocationController {
             } catch (NumberFormatException ex) {
                 return new Response("Latitude must be numeric", Status.BAD_REQUEST);
             }
-            
+
             if (longitude.trim().isEmpty() || longitude == null) {
                 return new Response("Longitude must not be empty", Status.BAD_REQUEST);
             }
-            
+
             try {
                 BigDecimal lon = new BigDecimal(longitude);
                 lonDob = Double.parseDouble(longitude);
-                if (lon.scale() > 4){
+                if (lon.scale() > 4) {
                     return new Response("Longitude must have less than 4 decimals", Status.BAD_REQUEST);
                 }
                 if (lonDob > 180 && lonDob < -180) {
@@ -88,6 +90,20 @@ public class LocationController {
             return new Response("Location created successfully", Status.CREATED);
         } catch (Exception ex) {
             return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public static Response getAllLocationsForTable() {
+        try {
+            List<Location> locations = StorageLocation.getInstance().getAllLocations();
+            // Storage should return sorted copy
+            if (locations.isEmpty()) {
+                return new Response("No locations found.", Status.OK, new ArrayList<Location>());
+            }
+            return new Response("Locations retrieved successfully.", Status.OK, locations);
+        } catch (Exception ex) {
+            // ex.printStackTrace();
+            return new Response("Error retrieving locations: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 }

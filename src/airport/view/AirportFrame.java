@@ -9,6 +9,7 @@ import airport.controller.LocationController;
 import airport.controller.PassengerController;
 import airport.controller.PlaneController;
 import airport.controller.utils.Response;
+import airport.controller.utils.Status;
 import airport.model.Location;
 import airport.model.Plane;
 import airport.model.Flight;
@@ -1675,113 +1676,123 @@ public class AirportFrame extends javax.swing.JFrame {
 
         String selectedPassengerIdStr = UserSelectComboBox.getSelectedItem() != null ? UserSelectComboBox.getSelectedItem().toString() : null;
 
-        if (selectedPassengerIdStr == null || selectedPassengerIdStr.equals("Select User")) {
-            // Optionally show a message or just leave the table empty
-            // JOptionPane.showMessageDialog(this, "Please select a user.", "Info", JOptionPane.INFORMATION_MESSAGE);
+        if (selectedPassengerIdStr == null || selectedPassengerIdStr.equals("Select User") || selectedPassengerIdStr.trim().isEmpty()) {
             return;
         }
 
-        try {
-            long passengerId = Long.parseLong(selectedPassengerIdStr);
-            Passenger passenger = StoragePassenger.getInstance().getPassenger(passengerId);
+        Response response = PassengerController.getFlightsForPassengerTable(selectedPassengerIdStr);
 
-            if (passenger != null) {
-                List<Flight> passengerFlights = passenger.getFlights2(); // This now returns a sorted list of copies
+        if (response.getStatus() == Status.OK) {
+            List<Flight> passengerFlights = (List<Flight>) response.getObject();
+            if (passengerFlights != null) {
                 for (Flight flight : passengerFlights) {
                     model.addRow(new Object[]{
                         flight.getId(),
-                        flight.getDepartureDate() != null ? flight.getDepartureDate().toString() : "N/A", // Or use dateTimeFormatter
-                        flight.calculateArrivalDate() != null ? flight.calculateArrivalDate().toString() : "N/A" // Or use dateTimeFormatter
+                        flight.getDepartureDate() != null ? flight.getDepartureDate().toString() : "N/A",
+                        flight.calculateArrivalDate() != null ? flight.calculateArrivalDate().toString() : "N/A"
                     });
                 }
-            } else {
-                // Passenger not found in storage, though they are in the combo box.
-                // This might indicate an inconsistency if passengers can be removed from storage
-                // without updating the combo box.
-                // For now, we just show an empty table for this user's flights.
             }
-        } catch (NumberFormatException e) {
-            // Handle the case where the selected item is not a valid long (e.g. "Select User")
-            if (!selectedPassengerIdStr.equals("Select User")) { // Avoid message for default item
-                JOptionPane.showMessageDialog(this, "Invalid passenger ID selected.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowMyFlightsRefreshButtonActionPerformed
 
     private void ShowAllPassengersRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllPassengersRefreshButtonActionPerformed
+        Response response = PassengerController.getAllPassengersForTable();
         DefaultTableModel model = (DefaultTableModel) ShowAllPassengersTable.getModel();
         model.setRowCount(0); // Clear existing data
 
-        List<Passenger> passengersFromStorage = StoragePassenger.getInstance().getAllPassengers();
-
-        for (Passenger passenger : passengersFromStorage) {
-            model.addRow(new Object[]{
-                passenger.getId(),
-                passenger.getFullname(),
-                passenger.getBirthDate() != null ? passenger.getBirthDate().toString() : "N/A", // Handle null
-                passenger.calculateAge(),
-                passenger.generateFullPhone(),
-                passenger.getCountry(),
-                passenger.getNumFlights()
-            });
+        if (response.getStatus() == Status.OK) {
+            List<Passenger> passengers = (List<Passenger>) response.getObject();
+            if (passengers != null) {
+                for (Passenger passenger : passengers) {
+                    model.addRow(new Object[]{
+                        passenger.getId(),
+                        passenger.getFullname(),
+                        passenger.getBirthDate() != null ? passenger.getBirthDate().toString() : "N/A",
+                        passenger.calculateAge(),
+                        passenger.generateFullPhone(),
+                        passenger.getCountry(),
+                        passenger.getNumFlights()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowAllPassengersRefreshButtonActionPerformed
 
     private void ShowAllFlightsRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllFlightsRefreshButtonActionPerformed
+        Response response = FlightController.getAllFlightsForTable();
         DefaultTableModel model = (DefaultTableModel) ShowAllFlightsTable.getModel();
         model.setRowCount(0);
 
-        List<Flight> flightsFromStorage = StorageFlight.getInstance().getAllFlights();
-
-        for (Flight flight : flightsFromStorage) {
-            String scaleAirportId = "-";
-            if (flight.getScaleLocation() != null) {
-                scaleAirportId = flight.getScaleLocation().getAirportId();
+        if (response.getStatus() == Status.OK) {
+            List<Flight> flights = (List<Flight>) response.getObject();
+            if (flights != null) {
+                for (Flight flight : flights) {
+                    String scaleAirportId = (flight.getScaleLocation() == null) ? "-" : flight.getScaleLocation().getAirportId();
+                    model.addRow(new Object[]{
+                        flight.getId(),
+                        flight.getDepartureLocation() != null ? flight.getDepartureLocation().getAirportId() : "N/A",
+                        flight.getArrivalLocation() != null ? flight.getArrivalLocation().getAirportId() : "N/A",
+                        scaleAirportId,
+                        flight.getDepartureDate() != null ? flight.getDepartureDate().toString() : "N/A",
+                        flight.calculateArrivalDate() != null ? flight.calculateArrivalDate().toString() : "N/A",
+                        flight.getPlane() != null ? flight.getPlane().getId() : "N/A",
+                        flight.getNumPassengers()
+                    });
+                }
             }
-            model.addRow(new Object[]{
-                flight.getId(),
-                flight.getDepartureLocation() != null ? flight.getDepartureLocation().getAirportId() : "N/A",
-                flight.getArrivalLocation() != null ? flight.getArrivalLocation().getAirportId() : "N/A",
-                scaleAirportId,
-                flight.getDepartureDate() != null ? flight.getDepartureDate().toString() : "N/A", // Or use dateTimeFormatter
-                flight.calculateArrivalDate() != null ? flight.calculateArrivalDate().toString() : "N/A", // Or use dateTimeFormatter
-                flight.getPlane() != null ? flight.getPlane().getId() : "N/A",
-                flight.getNumPassengers()
-            });
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowAllFlightsRefreshButtonActionPerformed
 
     private void ShowAllPlanesRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllPlanesRefreshButtonActionPerformed
+        Response response = PlaneController.getAllPlanesForTable();
         DefaultTableModel model = (DefaultTableModel) ShowAllPlanesTable.getModel();
         model.setRowCount(0);
 
-        List<Plane> planesFromStorage = StoragePlane.getInstance().getAllPlanes();
-
-        for (Plane plane : planesFromStorage) {
-            model.addRow(new Object[]{
-                plane.getId(),
-                plane.getBrand(),
-                plane.getModel(),
-                plane.getMaxCapacity(),
-                plane.getAirline(),
-                plane.getNumFlights()
-            });
+        if (response.getStatus() == Status.OK) {
+            List<Plane> planes = (List<Plane>) response.getObject();
+            if (planes != null) {
+                for (Plane plane : planes) {
+                    model.addRow(new Object[]{
+                        plane.getId(),
+                        plane.getBrand(),
+                        plane.getModel(),
+                        plane.getMaxCapacity(),
+                        plane.getAirline(),
+                        plane.getNumFlights()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowAllPlanesRefreshButtonActionPerformed
 
     private void ShowAllLocationsRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllLocationsRefreshButtonActionPerformed
+        Response response = LocationController.getAllLocationsForTable();
         DefaultTableModel model = (DefaultTableModel) ShowAllLocationsTable.getModel();
         model.setRowCount(0);
 
-        List<Location> locationsFromStorage = StorageLocation.getInstance().getAllLocations();
-
-        for (Location location : locationsFromStorage) {
-            model.addRow(new Object[]{
-                location.getAirportId(),
-                location.getAirportName(),
-                location.getAirportCity(),
-                location.getAirportCountry()
-            });
+        if (response.getStatus() == Status.OK) {
+            List<Location> locations = (List<Location>) response.getObject();
+            if (locations != null) {
+                for (Location location : locations) {
+                    model.addRow(new Object[]{
+                        location.getAirportId(),
+                        location.getAirportName(),
+                        location.getAirportCity(),
+                        location.getAirportCountry()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowAllLocationsRefreshButtonActionPerformed
 

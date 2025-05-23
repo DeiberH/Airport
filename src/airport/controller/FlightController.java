@@ -14,6 +14,8 @@ import airport.model.storage.StorageLocation;
 import airport.model.storage.StoragePlane;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -123,7 +125,7 @@ public class FlightController {
     public static Response addPassengertoFlight(String passengerId, String FlightId) {
         try {
             long idlong;
-            
+
             if (passengerId.trim().isEmpty() || passengerId == null) {
                 return new Response("Id must not be empty", Status.BAD_REQUEST);
             }
@@ -143,6 +145,20 @@ public class FlightController {
             return new Response("Passenger added to Flight successfully", Status.OK);
         } catch (Exception ex) {
             return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public static Response getAllFlightsForTable() {
+        try {
+            List<Flight> flights = StorageFlight.getInstance().getAllFlights();
+            // Storage should return sorted copy
+            if (flights.isEmpty()) {
+                return new Response("No flights found.", Status.OK, new ArrayList<Flight>());
+            }
+            return new Response("Flights retrieved successfully.", Status.OK, flights);
+        } catch (Exception ex) {
+            // ex.printStackTrace();
+            return new Response("Error retrieving flights: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 }
