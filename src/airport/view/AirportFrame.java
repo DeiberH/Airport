@@ -1565,7 +1565,7 @@ public class AirportFrame extends javax.swing.JFrame {
         String hoursDurationsScale = FlightScaleHourComboBox.getItemAt(FlightScaleHourComboBox.getSelectedIndex());
         String minutesDurationsScale = FlightScaleMinuteComboBox.getItemAt(FlightScaleMinuteComboBox.getSelectedIndex());
 
-        Response response = FlightController.createPassenger(id, planeId, departureLocationId, arrivalLocationId, scaleLocationId, year, month, day, hour, minutes, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale);
+        Response response = FlightController.createFlight(id, planeId, departureLocationId, arrivalLocationId, scaleLocationId, year, month, day, hour, minutes, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale);
 
         if (response.getStatus() >= 500) {
             JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
