@@ -9,6 +9,7 @@ import airport.controller.LocationController;
 import airport.controller.PassengerController;
 import airport.controller.PlaneController;
 import airport.controller.utils.Response;
+import airport.controller.utils.Status;
 import airport.model.Location;
 import airport.model.Plane;
 import airport.model.Flight;
@@ -18,6 +19,7 @@ import java.awt.Color;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
@@ -1659,57 +1661,137 @@ public class AirportFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_DelayFlightDelayButtonActionPerformed
 
     private void ShowMyFlightsRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowMyFlightsRefreshButtonActionPerformed
-        // TODO add your handling code here:
-        long passengerId = Long.parseLong(UserSelectComboBox.getItemAt(UserSelectComboBox.getSelectedIndex()));
-
-        Passenger passenger = null;
-        for (Passenger p : this.passengers) {
-            if (p.getId() == passengerId) {
-                passenger = p;
-            }
-        }
-
-        ArrayList<Flight> flights = passenger.getFlights();
         DefaultTableModel model = (DefaultTableModel) ShowMyFlightsTable.getModel();
         model.setRowCount(0);
-        for (Flight flight : flights) {
-            model.addRow(new Object[]{flight.getId(), flight.getDepartureDate(), flight.calculateArrivalDate()});
+
+        String selectedPassengerIdStr = UserSelectComboBox.getSelectedItem() != null ? UserSelectComboBox.getSelectedItem().toString() : null;
+
+        if (selectedPassengerIdStr == null || selectedPassengerIdStr.equals("Select User") || selectedPassengerIdStr.trim().isEmpty()) {
+            // JOptionPane.showMessageDialog(this, "Please select a user first.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            return; // Do not proceed if no valid user is selected
+        }
+
+        Response response = PassengerController.getFlightsForPassengerTable(selectedPassengerIdStr);
+
+        if (response.getStatus() == Status.OK) {
+            List<Flight> passengerFlights = (List<Flight>) response.getObject();
+            if (passengerFlights != null) {
+                for (Flight flight : passengerFlights) {
+                    model.addRow(new Object[]{
+                        flight.getId(),
+                        flight.getDepartureDate() != null ? flight.getDepartureDate().toString() : "N/A",
+                        flight.calculateArrivalDate() != null ? flight.calculateArrivalDate().toString() : "N/A"
+                    });
+                }
+            }
+            // Message for "No flights found for this passenger." is handled if needed by response.getMessage()
+            // if (response.getMessage() != null && passengerFlights != null && passengerFlights.isEmpty()) {
+            //    JOptionPane.showMessageDialog(this, response.getMessage(), "Info", JOptionPane.INFORMATION_MESSAGE);
+            // }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowMyFlightsRefreshButtonActionPerformed
 
     private void ShowAllPassengersRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllPassengersRefreshButtonActionPerformed
-        // TODO add your handling code here:
+        Response response = PassengerController.getAllPassengersForTable();
         DefaultTableModel model = (DefaultTableModel) ShowAllPassengersTable.getModel();
-        model.setRowCount(0);
-        for (Passenger passenger : this.passengers) {
-            model.addRow(new Object[]{passenger.getId(), passenger.getFullname(), passenger.getBirthDate(), passenger.calculateAge(), passenger.generateFullPhone(), passenger.getCountry(), passenger.getNumFlights()});
+        model.setRowCount(0); // Clear existing data
+
+        if (response.getStatus() == Status.OK) {
+            List<Passenger> passengers = (List<Passenger>) response.getObject();
+            if (passengers != null) {
+                for (Passenger passenger : passengers) {
+                    model.addRow(new Object[]{
+                        passenger.getId(),
+                        passenger.getFullname(),
+                        passenger.getBirthDate() != null ? passenger.getBirthDate().toString() : "N/A",
+                        passenger.calculateAge(),
+                        passenger.generateFullPhone(),
+                        passenger.getCountry(),
+                        passenger.getNumFlights()
+                    });
+                }
+            }
+            // Optionally, show a success message if the response message is suitable
+            // if (response.getMessage() != null && !response.getMessage().contains("No passengers found")) { // Avoid showing "No passengers found" as a success popup
+            //    JOptionPane.showMessageDialog(this, response.getMessage(), "Data Refreshed", JOptionPane.INFORMATION_MESSAGE);
+            // }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowAllPassengersRefreshButtonActionPerformed
 
     private void ShowAllFlightsRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllFlightsRefreshButtonActionPerformed
-        // TODO add your handling code here:
+        Response response = FlightController.getAllFlightsForTable();
         DefaultTableModel model = (DefaultTableModel) ShowAllFlightsTable.getModel();
         model.setRowCount(0);
-        for (Flight flight : this.flights) {
-            model.addRow(new Object[]{flight.getId(), flight.getDepartureLocation().getAirportId(), flight.getArrivalLocation().getAirportId(), (flight.getScaleLocation() == null ? "-" : flight.getScaleLocation().getAirportId()), flight.getDepartureDate(), flight.calculateArrivalDate(), flight.getPlane().getId(), flight.getNumPassengers()});
+
+        if (response.getStatus() == Status.OK) {
+            List<Flight> flights = (List<Flight>) response.getObject();
+            if (flights != null) {
+                for (Flight flight : flights) {
+                    String scaleAirportId = (flight.getScaleLocation() == null) ? "-" : flight.getScaleLocation().getAirportId();
+                    model.addRow(new Object[]{
+                        flight.getId(),
+                        flight.getDepartureLocation() != null ? flight.getDepartureLocation().getAirportId() : "N/A",
+                        flight.getArrivalLocation() != null ? flight.getArrivalLocation().getAirportId() : "N/A",
+                        scaleAirportId,
+                        flight.getDepartureDate() != null ? flight.getDepartureDate().toString() : "N/A",
+                        flight.calculateArrivalDate() != null ? flight.calculateArrivalDate().toString() : "N/A",
+                        flight.getPlane() != null ? flight.getPlane().getId() : "N/A",
+                        flight.getNumPassengers()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowAllFlightsRefreshButtonActionPerformed
 
     private void ShowAllPlanesRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllPlanesRefreshButtonActionPerformed
-        // TODO add your handling code here:
+        Response response = PlaneController.getAllPlanesForTable();
         DefaultTableModel model = (DefaultTableModel) ShowAllPlanesTable.getModel();
         model.setRowCount(0);
-        for (Plane plane : this.planes) {
-            model.addRow(new Object[]{plane.getId(), plane.getBrand(), plane.getModel(), plane.getMaxCapacity(), plane.getAirline(), plane.getNumFlights()});
+
+        if (response.getStatus() == Status.OK) {
+            List<Plane> planes = (List<Plane>) response.getObject();
+            if (planes != null) {
+                for (Plane plane : planes) {
+                    model.addRow(new Object[]{
+                        plane.getId(),
+                        plane.getBrand(),
+                        plane.getModel(),
+                        plane.getMaxCapacity(),
+                        plane.getAirline(),
+                        plane.getNumFlights()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowAllPlanesRefreshButtonActionPerformed
 
     private void ShowAllLocationsRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllLocationsRefreshButtonActionPerformed
-        // TODO add your handling code here:
+        Response response = LocationController.getAllLocationsForTable();
         DefaultTableModel model = (DefaultTableModel) ShowAllLocationsTable.getModel();
         model.setRowCount(0);
-        for (Location location : this.locations) {
-            model.addRow(new Object[]{location.getAirportId(), location.getAirportName(), location.getAirportCity(), location.getAirportCountry()});
+
+        if (response.getStatus() == Status.OK) {
+            List<Location> locations = (List<Location>) response.getObject();
+            if (locations != null) {
+                for (Location location : locations) {
+                    model.addRow(new Object[]{
+                        location.getAirportId(),
+                        location.getAirportName(),
+                        location.getAirportCity(),
+                        location.getAirportCountry()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ShowAllLocationsRefreshButtonActionPerformed
 

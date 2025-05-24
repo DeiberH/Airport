@@ -30,20 +30,19 @@ public class Flight {
     public Flight(String id, Plane plane, Location departureLocation, Location arrivalLocation, LocalDateTime departureDate, int hoursDurationArrival, int minutesDurationArrival) {
         this.id = id;
         this.passengers = new ArrayList<>();
-        this.plane = plane;
+        this.plane = plane; // Keep this to know which plane it belongs to
         this.departureLocation = departureLocation;
         this.arrivalLocation = arrivalLocation;
         this.departureDate = departureDate;
         this.hoursDurationArrival = hoursDurationArrival;
         this.minutesDurationArrival = minutesDurationArrival;
-        
-        this.plane.addFlight(this);
+        // REMOVED: this.plane.addFlight(this); 
     }
 
     public Flight(String id, Plane plane, Location departureLocation, Location scaleLocation, Location arrivalLocation, LocalDateTime departureDate, int hoursDurationArrival, int minutesDurationArrival, int hoursDurationScale, int minutesDurationScale) {
         this.id = id;
         this.passengers = new ArrayList<>();
-        this.plane = plane;
+        this.plane = plane; // Keep this
         this.departureLocation = departureLocation;
         this.scaleLocation = scaleLocation;
         this.arrivalLocation = arrivalLocation;
@@ -52,8 +51,7 @@ public class Flight {
         this.minutesDurationArrival = minutesDurationArrival;
         this.hoursDurationScale = hoursDurationScale;
         this.minutesDurationScale = minutesDurationScale;
-        
-        this.plane.addFlight(this);
+        // REMOVED: this.plane.addFlight(this);
     }
     
     public void addPassenger(Passenger passenger) {
