@@ -23,37 +23,39 @@ public class LocationController {
         this.locationFactory = locationFactory;
     }
 
-    public Response createLocation(String idStr, String nameStr, String cityStr, String countryStr, String latitudeStr, String longitudeStr) {
-        try {
-            String error = locationValidator.validateLocationData(idStr, nameStr, cityStr, countryStr, latitudeStr, longitudeStr);
-            if (error != null) {
-                return new Response(error, Status.BAD_REQUEST);
-            }
-            
-            String id = idStr.trim(); // Use trimmed id
-            String name = nameStr.trim();
-            String city = cityStr.trim();
-            String country = countryStr.trim();
-            double latDob = Double.parseDouble(latitudeStr.trim());
-            double lonDob = Double.parseDouble(longitudeStr.trim());
-            
-            Location newLocation = locationFactory.build(id, name, city, country, latDob, lonDob);
-            
-            if (!locationRepository.addLocation(newLocation)) {
-                return new Response("A location with ID '" + id + "' already exists", Status.BAD_REQUEST);
-            }
-            
-            Location locationCopy = locationFactory.build(newLocation.getAirportId(), newLocation.getAirportName(),
-                                                          newLocation.getAirportCity(), newLocation.getAirportCountry(),
-                                                          newLocation.getAirportLatitude(), newLocation.getAirportLongitude());
-            return new Response("Location created successfully", Status.CREATED, locationCopy);
-
-        } catch (NumberFormatException ex) {
-            return new Response("Invalid numeric format for latitude or longitude.", Status.BAD_REQUEST);
-        } catch (Exception ex) {
-            return new Response("Unexpected error creating location: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
+public Response createLocation(String idStr, String nameStr, String cityStr, String countryStr, String latitudeStr, String longitudeStr) {
+    try {
+        String error = locationValidator.validateLocationData(idStr, nameStr, cityStr, countryStr, latitudeStr, longitudeStr);
+        if (error != null) {
+            return new Response(error, Status.BAD_REQUEST);
         }
+        
+        String id = idStr.trim();
+        String name = nameStr.trim();
+        String city = cityStr.trim();
+        String country = countryStr.trim();
+        double latDob = Double.parseDouble(latitudeStr.trim());
+        double lonDob = Double.parseDouble(longitudeStr.trim());
+        
+        Location newLocation = locationFactory.build(id, name, city, country, latDob, lonDob);
+        
+        if (!locationRepository.addLocation(newLocation)) {
+            return new Response("A location with ID '" + id + "' already exists", Status.BAD_REQUEST);
+        }
+        
+        // Crear una copia para la respuesta
+        Location locationCopy = locationFactory.build(newLocation.getAirportId(), newLocation.getAirportName(),
+                                                      newLocation.getAirportCity(), newLocation.getAirportCountry(),
+                                                      newLocation.getAirportLatitude(), newLocation.getAirportLongitude());
+                                                      
+        return new Response("Location created successfully", Status.CREATED, locationCopy); // Devolver la copia
+
+    } catch (NumberFormatException ex) {
+        return new Response("Invalid numeric format for latitude or longitude.", Status.BAD_REQUEST);
+    } catch (Exception ex) {
+        return new Response("Unexpected error creating location: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
     }
+}
 
     public Response getAllLocationsForTable() {
         try {

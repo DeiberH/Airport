@@ -13,19 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PassengerController {
+
     private final IPassengerRepository passengerRepository;
     private final IPassengerValidator passengerValidator;
     private final IPassengerFactory passengerFactory;
 
     public PassengerController(IPassengerRepository passengerRepository,
-                               IPassengerValidator passengerValidator,
-                               IPassengerFactory passengerFactory) {
+            IPassengerValidator passengerValidator,
+            IPassengerFactory passengerFactory) {
         this.passengerRepository = passengerRepository;
         this.passengerValidator = passengerValidator;
         this.passengerFactory = passengerFactory;
     }
 
-    public Response createPassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) { //
+    public Response createPassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) {
         try {
             String error = passengerValidator.validatePassengerData(idStr, firstnameStr, lastnameStr, yearStr, monthStr, dayStr, phoneCodeStr, phoneStr, countryStr);
             if (error != null) {
@@ -48,11 +49,13 @@ public class PassengerController {
             if (!passengerRepository.addPassenger(newPassenger)) {
                 return new Response("A Passenger with ID '" + idLong + "' already exists", Status.BAD_REQUEST);
             }
-            
+
+            // Crear una copia para la respuesta
             Passenger passengerCopy = passengerFactory.build(newPassenger.getId(), newPassenger.getFirstname(), newPassenger.getLastname(),
-                                                              newPassenger.getBirthDate(), newPassenger.getCountryPhoneCode(),
-                                                              newPassenger.getPhone(), newPassenger.getCountry());
-            return new Response("Passenger created successfully", Status.CREATED, passengerCopy);
+                    newPassenger.getBirthDate(), newPassenger.getCountryPhoneCode(),
+                    newPassenger.getPhone(), newPassenger.getCountry());
+
+            return new Response("Passenger created successfully", Status.CREATED, passengerCopy); // Devolver la copia
 
         } catch (NumberFormatException | java.time.DateTimeException ex) {
             return new Response("Invalid format for numeric or date fields.", Status.BAD_REQUEST);
@@ -61,13 +64,13 @@ public class PassengerController {
         }
     }
 
-    public Response updatePassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) { //
+    public Response updatePassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) {
         try {
             if (idStr == null || idStr.trim().isEmpty()) {
                 return new Response("Passenger ID for update must not be empty.", Status.BAD_REQUEST);
             }
             long idLong = Long.parseLong(idStr.trim());
-            
+
             Passenger passenger = passengerRepository.getPassenger(idLong);
             if (passenger == null) {
                 return new Response("Passenger with ID '" + idLong + "' not found for update.", Status.NOT_FOUND);
@@ -96,13 +99,13 @@ public class PassengerController {
             passenger.setCountry(country);
 
             if (!passengerRepository.updatePassenger(passenger)) {
-                 return new Response("Failed to update passenger in storage.", Status.INTERNAL_SERVER_ERROR);
+                return new Response("Failed to update passenger in storage.", Status.INTERNAL_SERVER_ERROR);
             }
 
             Passenger passengerCopy = passengerFactory.build(passenger.getId(), passenger.getFirstname(), passenger.getLastname(),
-                                                              passenger.getBirthDate(), passenger.getCountryPhoneCode(),
-                                                              passenger.getPhone(), passenger.getCountry());
-            return new Response("Passenger updated successfully", Status.OK, passengerCopy);
+                    passenger.getBirthDate(), passenger.getCountryPhoneCode(),
+                    passenger.getPhone(), passenger.getCountry());
+            return new Response("Passenger updated successfully", Status.OK, passengerCopy); // Status.OK y devolver copia
 
         } catch (NumberFormatException | java.time.DateTimeException ex) {
             return new Response("Invalid format for numeric or date fields during update.", Status.BAD_REQUEST);

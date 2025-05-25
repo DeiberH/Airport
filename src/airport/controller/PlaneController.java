@@ -11,19 +11,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PlaneController {
+
     private final IPlaneRepository planeRepository;
     private final IPlaneValidator planeValidator;
     private final IPlaneFactory planeFactory;
 
     public PlaneController(IPlaneRepository planeRepository,
-                           IPlaneValidator planeValidator,
-                           IPlaneFactory planeFactory) {
+            IPlaneValidator planeValidator,
+            IPlaneFactory planeFactory) {
         this.planeRepository = planeRepository;
         this.planeValidator = planeValidator;
         this.planeFactory = planeFactory;
     }
 
-    public Response createPlane(String idStr, String brandStr, String modelStr, String maxCapacityStr, String airlineStr) { //
+    public Response createPlane(String idStr, String brandStr, String modelStr, String maxCapacityStr, String airlineStr) { // Asumiendo renombrado
         try {
             String error = planeValidator.validatePlaneData(idStr, brandStr, modelStr, maxCapacityStr, airlineStr);
             if (error != null) {
@@ -42,9 +43,11 @@ public class PlaneController {
                 return new Response("A plane with ID '" + id + "' already exists", Status.BAD_REQUEST);
             }
 
+            // Crear una copia para la respuesta
             Plane planeCopy = planeFactory.createPlane(newPlane.getId(), newPlane.getBrand(), newPlane.getModel(),
-                                                      newPlane.getMaxCapacity(), newPlane.getAirline());
-            return new Response("Airplane created successfully", Status.CREATED, planeCopy);
+                    newPlane.getMaxCapacity(), newPlane.getAirline());
+
+            return new Response("Airplane created successfully", Status.CREATED, planeCopy); // Devolver la copia
 
         } catch (NumberFormatException ex) {
             return new Response("Invalid numeric format for capacity.", Status.BAD_REQUEST);
