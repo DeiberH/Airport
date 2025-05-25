@@ -18,7 +18,7 @@ public class StoragePlane implements IPlaneRepository, Subject {
 
     public StoragePlane() {
         this.observers = new ArrayList<>();
-        this.planes = new ArrayList<>(JsonDataManager.loadPlanes(filePath)); //
+        this.planes = new ArrayList<>(JsonDataManager.loadPlanes(filePath));
     }
 
     private void saveToDisk() {

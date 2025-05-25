@@ -70,26 +70,21 @@ public class AirportFrame extends javax.swing.JFrame implements Observer {
     public AirportFrame() {
         initComponents();
 
-        // 1. Instanciar Repositorios y ASIGNARLOS a las variables miembro
-        this.locationRepository = new StorageLocation();
-        this.passengerRepository = new StoragePassenger();
-        this.planeRepository = new StoragePlane();
-        // StorageFlight necesita los otros repositorios para cargar referencias desde JSON
-        this.flightRepository = new StorageFlight(this.planeRepository, this.locationRepository);
+        this.locationRepository = new StorageLocation(); //
+        this.passengerRepository = new StoragePassenger(); //
+        this.planeRepository = new StoragePlane(); //
+        this.flightRepository = new StorageFlight(this.planeRepository, this.locationRepository); //
 
-        // 2. Instanciar Validator Services
         ILocationValidator locationVal = new LocationValidatorService();
         IPassengerValidator passengerVal = new PassengerValidatorService();
         IPlaneValidator planeVal = new PlaneValidatorService();
         IFlightValidator flightVal = new FlightValidatorService();
 
-        // 3. Instanciar Factory Services
         ILocationFactory locationFac = new LocationFactoryService();
         IPassengerFactory passengerFac = new PassengerFactoryService();
         IPlaneFactory planeFac = new PlaneFactoryService();
         IFlightFactory flightFac = new FlightFactoryService();
 
-        // 4. Instanciar Controllers con las dependencias (usando las variables miembro de repositorio donde sea apropiado)
         this.locationController = new LocationController(this.locationRepository, locationVal, locationFac);
         this.passengerController = new PassengerController(this.passengerRepository, passengerVal, passengerFac);
         this.planeController = new PlaneController(this.planeRepository, planeVal, planeFac);
@@ -97,13 +92,11 @@ public class AirportFrame extends javax.swing.JFrame implements Observer {
                 this.flightRepository,
                 flightVal,
                 flightFac,
-                this.planeRepository, // Pasar la instancia miembro
-                this.locationRepository, // Pasar la instancia miembro
-                this.passengerRepository // Pasar la instancia miembro
+                this.planeRepository,
+                this.locationRepository,
+                this.passengerRepository
         );
 
-        // 5. Registrar AirportFrame como Observer a las instancias miembro de repositorios
-        // (Asegúrate que tus clases Storage* implementen la interfaz Subject)
         if (this.locationRepository instanceof Subject) {
             ((Subject) this.locationRepository).registerObserver(this);
         }
@@ -117,9 +110,13 @@ public class AirportFrame extends javax.swing.JFrame implements Observer {
             ((Subject) this.flightRepository).registerObserver(this);
         }
 
-        refreshAllTables(); // Carga inicial de datos en tablas
+        populateUserSelectComboBox();
+        populateFlightPlaneComboBox();
+        populateLocationComboBoxes();
+        populateFlightSelectionComboBoxes();
 
-        // Resto de tu configuración del constructor
+        refreshAllTables();
+
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
         this.generateMonths();
@@ -129,28 +126,92 @@ public class AirportFrame extends javax.swing.JFrame implements Observer {
         this.blockPanels();
     }
 
+    private void populateUserSelectComboBox() {
+        UserSelectComboBox.removeAllItems();
+        UserSelectComboBox.addItem("Select User");
+        Response response = this.passengerController.getAllPassengersForTable();
+        if (response.getStatus() == Status.OK) { //
+            List<Passenger> passengerList = (List<Passenger>) response.getObject(); //
+            if (passengerList != null) {
+                for (Passenger passenger : passengerList) {
+                    UserSelectComboBox.addItem(String.valueOf(passenger.getId()));
+                }
+            }
+        }
+    }
+
+    private void populateFlightPlaneComboBox() {
+        FlightPlaneComboBox.removeAllItems();
+        FlightPlaneComboBox.addItem("Plane");
+        Response response = this.planeController.getAllPlanesForTable();
+        if (response.getStatus() == Status.OK) { //
+            List<Plane> planeList = (List<Plane>) response.getObject(); //
+            if (planeList != null) {
+                for (Plane plane : planeList) {
+                    FlightPlaneComboBox.addItem(plane.getId());
+                }
+            }
+        }
+    }
+
+    private void populateLocationComboBoxes() {
+        FlightDepartureLocationComboBox.removeAllItems();
+        FlightArrivalLocationComboBox.removeAllItems();
+        FlightScaleLocationComboBox.removeAllItems();
+
+        FlightDepartureLocationComboBox.addItem("Location");
+        FlightArrivalLocationComboBox.addItem("Location");
+        FlightScaleLocationComboBox.addItem("Location");
+
+        Response response = this.locationController.getAllLocationsForTable();
+        if (response.getStatus() == Status.OK) { //
+            List<Location> locationList = (List<Location>) response.getObject(); //
+            if (locationList != null) {
+                for (Location location : locationList) {
+                    FlightDepartureLocationComboBox.addItem(location.getAirportId());
+                    FlightArrivalLocationComboBox.addItem(location.getAirportId());
+                    FlightScaleLocationComboBox.addItem(location.getAirportId());
+                }
+            }
+        }
+    }
+
+    private void populateFlightSelectionComboBoxes() {
+        AddToFlightFlightComboBox.removeAllItems();
+        DelayFlightIDComboBox.removeAllItems();
+
+        AddToFlightFlightComboBox.addItem("Flight");
+        DelayFlightIDComboBox.addItem("ID");
+
+        Response response = this.flightController.getAllFlightsForTable();
+        if (response.getStatus() == Status.OK) { //
+            List<Flight> flightList = (List<Flight>) response.getObject(); //
+            if (flightList != null) {
+                for (Flight flight : flightList) {
+                    AddToFlightFlightComboBox.addItem(flight.getId());
+                    DelayFlightIDComboBox.addItem(flight.getId());
+                }
+            }
+        }
+    }
+
     @Override
     public void update() {
-        // A simple way is to refresh all tables.
-        // For more specific updates, the notifyObservers() could pass an argument
-        // or you could have different update methods.
-        System.out.println("Data changed, refreshing tables..."); // For debugging
         refreshAllTables();
     }
 
     private void refreshAllTables() {
-        // Call your existing refresh button actions, or their core logic
-        ShowAllPassengersRefreshButtonActionPerformed(null); // Pass null or a dummy event
+        ShowAllPassengersRefreshButtonActionPerformed(null);
         ShowAllPlanesRefreshButtonActionPerformed(null);
         ShowAllLocationsRefreshButtonActionPerformed(null);
         ShowAllFlightsRefreshButtonActionPerformed(null);
-        // Potentially refresh "My Flights" if a user is selected, or clear it
-        if (UserSelectComboBox.getSelectedIndex() > 0) { // Assuming index 0 is "Select User"
+        if (UserSelectComboBox.getSelectedIndex() > 0 && UserSelectComboBox.getSelectedItem() != null && !UserSelectComboBox.getSelectedItem().toString().equals("Select User")) {
             ShowMyFlightsRefreshButtonActionPerformed(null);
         } else {
             DefaultTableModel myFlightsModel = (DefaultTableModel) ShowMyFlightsTable.getModel();
             myFlightsModel.setRowCount(0);
         }
+
     }
 
     private void blockPanels() {

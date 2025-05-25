@@ -13,12 +13,12 @@ import java.util.Optional;
 
 public class StoragePassenger implements IPassengerRepository, Subject {
     private ArrayList<Passenger> passengers;
-    private final String filePath = "json/passengers.json"; // Ensure this path is correct
+    private final String filePath = "json/passengers.json";
     private final List<Observer> observers;
 
     public StoragePassenger() {
         this.observers = new ArrayList<>();
-        this.passengers = new ArrayList<>(JsonDataManager.loadPassengers(filePath)); //
+        this.passengers = new ArrayList<>(JsonDataManager.loadPassengers(filePath));
     }
 
     private void saveToDisk() {

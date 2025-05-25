@@ -4,8 +4,8 @@ import airport.model.Flight;
 import airport.model.Plane;
 import airport.model.Location;
 import airport.controller.interfaces.IFlightRepository;
-import airport.controller.interfaces.IPlaneRepository; // For loading
-import airport.controller.interfaces.ILocationRepository; // For loading
+import airport.controller.interfaces.IPlaneRepository;
+import airport.controller.interfaces.ILocationRepository;
 import airport.utils.file.JsonDataManager;
 import airport.utils.observer.Observer;
 import airport.utils.observer.Subject;
@@ -17,10 +17,10 @@ import java.util.Optional;
 
 public class StorageFlight implements IFlightRepository, Subject {
     private ArrayList<Flight> flights;
-    private final String filePath = "json/flights.json"; // Ensure this path is correct
+    private final String filePath = "json/flights.json";
     private final List<Observer> observers;
-    private final IPlaneRepository planeRepository; // Needed for resolving plane objects during load
-    private final ILocationRepository locationRepository; // Needed for resolving location objects during load
+    private final IPlaneRepository planeRepository; 
+    private final ILocationRepository locationRepository; 
 
     public StorageFlight(IPlaneRepository planeRepository, ILocationRepository locationRepository) {
         this.observers = new ArrayList<>();
@@ -32,10 +32,8 @@ public class StorageFlight implements IFlightRepository, Subject {
     private void loadInitialData(){
         List<Plane> allPlanes = this.planeRepository.getAllPlanes();
         List<Location> allLocations = this.locationRepository.getAllLocations();
-        this.flights = new ArrayList<>(JsonDataManager.loadFlights(filePath, allPlanes, allLocations)); //
+        this.flights = new ArrayList<>(JsonDataManager.loadFlights(filePath, allPlanes, allLocations));
         JsonDataManager.rebuildFlightPlaneAssociations(this.flights, allPlanes);
-        // Potentially save planes again if their flight lists were modified and need to be persisted
-        // Or ensure Plane's addFlight doesn't trigger a save if it's part of initial load
     }
 
     private void saveToDisk() {
@@ -49,7 +47,6 @@ public class StorageFlight implements IFlightRepository, Subject {
             return false;
         }
         this.flights.add(flight);
-        // The association plane.addFlight(flight) is handled by FlightController after this method succeeds.
         saveToDisk();
         return true;
     }
