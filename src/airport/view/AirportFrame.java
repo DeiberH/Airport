@@ -4,49 +4,214 @@
  */
 package airport.view;
 
+import airport.utils.observer.Observer;
+
+import airport.controller.FlightController;
+import airport.controller.LocationController;
+import airport.controller.PassengerController;
+import airport.controller.PlaneController;
+import airport.controller.factory.service.FlightFactoryService;
+import airport.controller.factory.service.LocationFactoryService;
+import airport.controller.factory.service.PassengerFactoryService;
+import airport.controller.factory.service.PlaneFactoryService;
+import airport.controller.interfaces.IFlightFactory;
+import airport.controller.interfaces.IFlightRepository;
+import airport.controller.interfaces.IFlightValidator;
+import airport.controller.interfaces.ILocationFactory;
+import airport.controller.interfaces.ILocationRepository;
+import airport.controller.interfaces.ILocationValidator;
+import airport.controller.interfaces.IPassengerFactory;
+import airport.controller.interfaces.IPassengerRepository;
+import airport.controller.interfaces.IPassengerValidator;
+import airport.controller.interfaces.IPlaneFactory;
+import airport.controller.interfaces.IPlaneRepository;
+import airport.controller.interfaces.IPlaneValidator;
+import airport.controller.utils.Response;
+import airport.controller.utils.Status;
+import airport.controller.validation.service.FlightValidatorService;
+import airport.controller.validation.service.LocationValidatorService;
+import airport.controller.validation.service.PassengerValidatorService;
+import airport.controller.validation.service.PlaneValidatorService;
 import airport.model.Location;
 import airport.model.Plane;
 import airport.model.Flight;
 import airport.model.Passenger;
-import com.formdev.flatlaf.FlatDarkLaf;
+import airport.model.storage.StorageFlight;
+import airport.model.storage.StorageLocation;
+import airport.model.storage.StoragePassenger;
+import airport.model.storage.StoragePlane;
+import airport.utils.observer.Subject;
 import java.awt.Color;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import javax.swing.UIManager;
+import java.util.List;
+import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
 /**
  *
  * @author edangulo
  */
-public class AirportFrame extends javax.swing.JFrame {
+public class AirportFrame extends javax.swing.JFrame implements Observer {
 
     /**
      * Creates new form AirportFrame
      */
     private int x, y;
-    private ArrayList<Passenger> passengers;
-    private ArrayList<Plane> planes;
-    private ArrayList<Location> locations;
-    private ArrayList<Flight> flights;
+    private final LocationController locationController;
+    private final PassengerController passengerController;
+    private final PlaneController planeController;
+    private final FlightController flightController;
+
+    // Repositories are also subjects now
+    private final ILocationRepository locationRepository;
+    private final IPassengerRepository passengerRepository;
+    private final IPlaneRepository planeRepository;
+    private final IFlightRepository flightRepository;
 
     public AirportFrame() {
         initComponents();
 
-        this.passengers = new ArrayList<>();
-        this.planes = new ArrayList<>();
-        this.locations = new ArrayList<>();
-        this.flights = new ArrayList<>();
+        this.locationRepository = new StorageLocation(); //
+        this.passengerRepository = new StoragePassenger(); //
+        this.planeRepository = new StoragePlane(); //
+        this.flightRepository = new StorageFlight(this.planeRepository, this.locationRepository); //
+
+        ILocationValidator locationVal = new LocationValidatorService();
+        IPassengerValidator passengerVal = new PassengerValidatorService();
+        IPlaneValidator planeVal = new PlaneValidatorService();
+        IFlightValidator flightVal = new FlightValidatorService();
+
+        ILocationFactory locationFac = new LocationFactoryService();
+        IPassengerFactory passengerFac = new PassengerFactoryService();
+        IPlaneFactory planeFac = new PlaneFactoryService();
+        IFlightFactory flightFac = new FlightFactoryService();
+
+        this.locationController = new LocationController(this.locationRepository, locationVal, locationFac);
+        this.passengerController = new PassengerController(this.passengerRepository, passengerVal, passengerFac);
+        this.planeController = new PlaneController(this.planeRepository, planeVal, planeFac);
+        this.flightController = new FlightController(
+                this.flightRepository,
+                flightVal,
+                flightFac,
+                this.planeRepository,
+                this.locationRepository,
+                this.passengerRepository
+        );
+
+        if (this.locationRepository instanceof Subject) {
+            ((Subject) this.locationRepository).registerObserver(this);
+        }
+        if (this.passengerRepository instanceof Subject) {
+            ((Subject) this.passengerRepository).registerObserver(this);
+        }
+        if (this.planeRepository instanceof Subject) {
+            ((Subject) this.planeRepository).registerObserver(this);
+        }
+        if (this.flightRepository instanceof Subject) {
+            ((Subject) this.flightRepository).registerObserver(this);
+        }
+
+        populateUserSelectComboBox();
+        populateFlightPlaneComboBox();
+        populateLocationComboBoxes();
+        populateFlightSelectionComboBoxes();
+
+        refreshAllTables();
 
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
-
         this.generateMonths();
         this.generateDays();
         this.generateHours();
         this.generateMinutes();
         this.blockPanels();
+    }
+
+    private void populateUserSelectComboBox() {
+        UserSelectComboBox.removeAllItems();
+        UserSelectComboBox.addItem("Select User");
+        Response response = this.passengerController.getAllPassengersForTable();
+        if (response.getStatus() == Status.OK) { //
+            List<Passenger> passengerList = (List<Passenger>) response.getObject(); //
+            if (passengerList != null) {
+                for (Passenger passenger : passengerList) {
+                    UserSelectComboBox.addItem(String.valueOf(passenger.getId()));
+                }
+            }
+        }
+    }
+
+    private void populateFlightPlaneComboBox() {
+        FlightPlaneComboBox.removeAllItems();
+        FlightPlaneComboBox.addItem("Plane");
+        Response response = this.planeController.getAllPlanesForTable();
+        if (response.getStatus() == Status.OK) { //
+            List<Plane> planeList = (List<Plane>) response.getObject(); //
+            if (planeList != null) {
+                for (Plane plane : planeList) {
+                    FlightPlaneComboBox.addItem(plane.getId());
+                }
+            }
+        }
+    }
+
+    private void populateLocationComboBoxes() {
+        FlightDepartureLocationComboBox.removeAllItems();
+        FlightArrivalLocationComboBox.removeAllItems();
+        FlightScaleLocationComboBox.removeAllItems();
+
+        FlightDepartureLocationComboBox.addItem("Location");
+        FlightArrivalLocationComboBox.addItem("Location");
+        FlightScaleLocationComboBox.addItem("Location");
+
+        Response response = this.locationController.getAllLocationsForTable();
+        if (response.getStatus() == Status.OK) { //
+            List<Location> locationList = (List<Location>) response.getObject(); //
+            if (locationList != null) {
+                for (Location location : locationList) {
+                    FlightDepartureLocationComboBox.addItem(location.getAirportId());
+                    FlightArrivalLocationComboBox.addItem(location.getAirportId());
+                    FlightScaleLocationComboBox.addItem(location.getAirportId());
+                }
+            }
+        }
+    }
+
+    private void populateFlightSelectionComboBoxes() {
+        AddToFlightFlightComboBox.removeAllItems();
+        DelayFlightIDComboBox.removeAllItems();
+
+        AddToFlightFlightComboBox.addItem("Flight");
+        DelayFlightIDComboBox.addItem("ID");
+
+        Response response = this.flightController.getAllFlightsForTable();
+        if (response.getStatus() == Status.OK) { //
+            List<Flight> flightList = (List<Flight>) response.getObject(); //
+            if (flightList != null) {
+                for (Flight flight : flightList) {
+                    AddToFlightFlightComboBox.addItem(flight.getId());
+                    DelayFlightIDComboBox.addItem(flight.getId());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void update() {
+        refreshAllTables();
+    }
+
+    private void refreshAllTables() {
+        ShowAllPassengersRefreshButtonActionPerformed(null);
+        ShowAllPlanesRefreshButtonActionPerformed(null);
+        ShowAllLocationsRefreshButtonActionPerformed(null);
+        ShowAllFlightsRefreshButtonActionPerformed(null);
+        if (UserSelectComboBox.getSelectedIndex() > 0 && UserSelectComboBox.getSelectedItem() != null && !UserSelectComboBox.getSelectedItem().toString().equals("Select User")) {
+            ShowMyFlightsRefreshButtonActionPerformed(null);
+        } else {
+            DefaultTableModel myFlightsModel = (DefaultTableModel) ShowMyFlightsTable.getModel();
+            myFlightsModel.setRowCount(0);
+        }
+
     }
 
     private void blockPanels() {
@@ -416,7 +581,7 @@ public class AirportFrame extends javax.swing.JFrame {
         AirplaneBrandLabel.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneBrandLabel.setText("Brand:");
         AirplaneRegPanel.add(AirplaneBrandLabel);
-        AirplaneBrandLabel.setBounds(53, 157, 52, 25);
+        AirplaneBrandLabel.setBounds(53, 157, 50, 25);
 
         AirplaneBrandTextField.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneRegPanel.add(AirplaneBrandTextField);
@@ -429,7 +594,7 @@ public class AirportFrame extends javax.swing.JFrame {
         AirplaneModelLabel.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneModelLabel.setText("Model:");
         AirplaneRegPanel.add(AirplaneModelLabel);
-        AirplaneModelLabel.setBounds(53, 216, 57, 25);
+        AirplaneModelLabel.setBounds(53, 216, 55, 25);
 
         AirplaneMaxCapacityTextField.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneRegPanel.add(AirplaneMaxCapacityTextField);
@@ -438,7 +603,7 @@ public class AirportFrame extends javax.swing.JFrame {
         AirplaneMaxCapacityLabel.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneMaxCapacityLabel.setText("Max Capacity:");
         AirplaneRegPanel.add(AirplaneMaxCapacityLabel);
-        AirplaneMaxCapacityLabel.setBounds(53, 276, 114, 25);
+        AirplaneMaxCapacityLabel.setBounds(53, 276, 109, 25);
 
         AirplaneAirlineTextField.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         AirplaneRegPanel.add(AirplaneAirlineTextField);
@@ -1417,7 +1582,7 @@ public class AirportFrame extends javax.swing.JFrame {
 
         }
         for (int i = 1; i < MenuTabbedPane.getTabCount(); i++) {
-                MenuTabbedPane.setEnabledAt(i, true);
+            MenuTabbedPane.setEnabledAt(i, true);
         }
         MenuTabbedPane.setEnabledAt(5, false);
         MenuTabbedPane.setEnabledAt(6, false);
@@ -1441,223 +1606,344 @@ public class AirportFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_UserRadioButtonActionPerformed
 
     private void PassangerRegisterButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PassangerRegisterButtonActionPerformed
-        // TODO add your handling code here:
-        long id = Long.parseLong(PassengerIDTextField.getText());
+        String id = PassengerIDTextField.getText();
         String firstname = PassengerFirstNameTextField.getText();
         String lastname = PassengerLastNameTextField.getText();
-        int year = Integer.parseInt(PassengerBirthdateYearTextField.getText());
-        int month = Integer.parseInt(PassengerMonthComboBox.getItemAt(PassengerMonthComboBox.getSelectedIndex()));
-        int day = Integer.parseInt(PassengerDayComboBox.getItemAt(PassengerDayComboBox.getSelectedIndex()));
-        int phoneCode = Integer.parseInt(PassengerPhonePrefixTextField.getText());
-        long phone = Long.parseLong(PassengerPhoneTextField.getText());
+        String year = PassengerBirthdateYearTextField.getText();
+        String month = PassengerMonthComboBox.getItemAt(PassengerMonthComboBox.getSelectedIndex());
+        String day = PassengerDayComboBox.getItemAt(PassengerDayComboBox.getSelectedIndex());
+        String phoneCode = PassengerPhonePrefixTextField.getText();
+        String phone = PassengerPhoneTextField.getText();
         String country = PassengerCountryTextField.getText();
 
-        LocalDate birthDate = LocalDate.of(year, month, day);
+        Response response = this.passengerController.createPassenger(id, firstname, lastname, year, month, day, phoneCode, phone, country); //
 
-        this.passengers.add(new Passenger(id, firstname, lastname, birthDate, phoneCode, phone, country));
-        this.UserSelectComboBox.addItem("" + id);
+        if (response.getStatus() >= 500) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
+        } else if (response.getStatus() >= 400) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE); //
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE); //
+
+            PassengerIDTextField.setText("");
+            PassengerFirstNameTextField.setText("");
+            PassengerLastNameTextField.setText("");
+            PassengerBirthdateYearTextField.setText("");
+            PassengerMonthComboBox.setSelectedIndex(0);
+            PassengerDayComboBox.setSelectedIndex(0);
+            PassengerPhonePrefixTextField.setText("");
+            PassengerPhoneTextField.setText("");
+            PassengerCountryTextField.setText("");
+
+            if (response.getStatus() == Status.CREATED && response.getObject() != null) { //
+                Passenger createdPassenger = (Passenger) response.getObject(); //
+                this.UserSelectComboBox.addItem(String.valueOf(createdPassenger.getId()));
+            }
+        }
     }//GEN-LAST:event_PassangerRegisterButtonActionPerformed
 
     private void AirplaneCreateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AirplaneCreateButtonActionPerformed
-        // TODO add your handling code here:
         String id = AirplaneIDTextField.getText();
         String brand = AirplaneBrandTextField.getText();
         String model = AirplaneModelTextField.getText();
-        int maxCapacity = Integer.parseInt(AirplaneMaxCapacityTextField.getText());
+        String maxCapacity = AirplaneMaxCapacityTextField.getText();
         String airline = AirplaneAirlineTextField.getText();
 
-        this.planes.add(new Plane(id, brand, model, maxCapacity, airline));
+        Response response = this.planeController.createPlane(id, brand, model, maxCapacity, airline); //
 
-        this.FlightPlaneComboBox.addItem(id);
+        if (response.getStatus() >= 500) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
+        } else if (response.getStatus() >= 400) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE); //
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE); //
+
+            AirplaneIDTextField.setText("");
+            AirplaneBrandTextField.setText("");
+            AirplaneModelTextField.setText("");
+            AirplaneMaxCapacityTextField.setText("");
+            AirplaneAirlineTextField.setText("");
+
+            if (response.getStatus() == Status.CREATED && response.getObject() != null) { //
+                Plane createdPlane = (Plane) response.getObject(); //
+                this.FlightPlaneComboBox.addItem(createdPlane.getId());
+            }
+        }
     }//GEN-LAST:event_AirplaneCreateButtonActionPerformed
 
     private void LocationAirportCreateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LocationAirportCreateButtonActionPerformed
-        // TODO add your handling code here:
         String id = LocationAirportIDTextField.getText();
         String name = LocationAirportNameTextField.getText();
         String city = LocationAirportCityTextField.getText();
         String country = LocationAirportCountryTextField.getText();
-        double latitude = Double.parseDouble(LocationAirportLatitudeTextField.getText());
-        double longitude = Double.parseDouble(LocationAirportLongitudeTextField.getText());
+        String latitude = LocationAirportLatitudeTextField.getText();
+        String longitude = LocationAirportLongitudeTextField.getText();
 
-        this.locations.add(new Location(id, name, city, country, latitude, longitude));
+        Response response = this.locationController.createLocation(id, name, city, country, latitude, longitude); //
 
-        this.FlightDepartureLocationComboBox.addItem(id);
-        this.FlightArrivalLocationComboBox.addItem(id);
-        this.FlightScaleLocationComboBox.addItem(id);
+        if (response.getStatus() >= 500) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
+        } else if (response.getStatus() >= 400) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE); //
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE); //
+
+            LocationAirportIDTextField.setText("");
+            LocationAirportNameTextField.setText("");
+            LocationAirportCityTextField.setText("");
+            LocationAirportCountryTextField.setText("");
+            LocationAirportLatitudeTextField.setText("");
+            LocationAirportLongitudeTextField.setText("");
+
+            if (response.getStatus() == Status.CREATED && response.getObject() != null) { //
+                Location createdLocation = (Location) response.getObject(); //
+                String airportId = createdLocation.getAirportId();
+                this.FlightDepartureLocationComboBox.addItem(airportId);
+                this.FlightArrivalLocationComboBox.addItem(airportId);
+                this.FlightScaleLocationComboBox.addItem(airportId);
+            }
+        }
     }//GEN-LAST:event_LocationAirportCreateButtonActionPerformed
 
     private void FlightCreateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FlightCreateButtonActionPerformed
-        // TODO add your handling code here:
         String id = FlightIDTextField.getText();
         String planeId = FlightPlaneComboBox.getItemAt(FlightPlaneComboBox.getSelectedIndex());
         String departureLocationId = FlightDepartureLocationComboBox.getItemAt(FlightDepartureLocationComboBox.getSelectedIndex());
         String arrivalLocationId = FlightArrivalLocationComboBox.getItemAt(FlightArrivalLocationComboBox.getSelectedIndex());
         String scaleLocationId = FlightScaleLocationComboBox.getItemAt(FlightScaleLocationComboBox.getSelectedIndex());
-        int year = Integer.parseInt(FlightDepartureDateYearTextField.getText());
-        int month = Integer.parseInt(FlightDepartureDateMonthComboBox.getItemAt(FlightDepartureDateMonthComboBox.getSelectedIndex()));
-        int day = Integer.parseInt(FlightDepartureDateDayComboBox.getItemAt(FlightDepartureDateDayComboBox.getSelectedIndex()));
-        int hour = Integer.parseInt(FlightDepartureDateHourComboBox.getItemAt(FlightDepartureDateHourComboBox.getSelectedIndex()));
-        int minutes = Integer.parseInt(FlightDepartureDateMinuteComboBox.getItemAt(FlightDepartureDateMinuteComboBox.getSelectedIndex()));
-        int hoursDurationsArrival = Integer.parseInt(FlightArrivalHourComboBox.getItemAt(FlightArrivalHourComboBox.getSelectedIndex()));
-        int minutesDurationsArrival = Integer.parseInt(FlightArrivalMinuteComboBox.getItemAt(FlightArrivalMinuteComboBox.getSelectedIndex()));
-        int hoursDurationsScale = Integer.parseInt(FlightScaleHourComboBox.getItemAt(FlightScaleHourComboBox.getSelectedIndex()));
-        int minutesDurationsScale = Integer.parseInt(FlightScaleMinuteComboBox.getItemAt(FlightScaleMinuteComboBox.getSelectedIndex()));
+        String year = FlightDepartureDateYearTextField.getText();
+        String month = FlightDepartureDateMonthComboBox.getItemAt(FlightDepartureDateMonthComboBox.getSelectedIndex());
+        String day = FlightDepartureDateDayComboBox.getItemAt(FlightDepartureDateDayComboBox.getSelectedIndex());
+        String hour = FlightDepartureDateHourComboBox.getItemAt(FlightDepartureDateHourComboBox.getSelectedIndex());
+        String minutes = FlightDepartureDateMinuteComboBox.getItemAt(FlightDepartureDateMinuteComboBox.getSelectedIndex());
+        String hoursDurationsArrival = FlightArrivalHourComboBox.getItemAt(FlightArrivalHourComboBox.getSelectedIndex());
+        String minutesDurationsArrival = FlightArrivalMinuteComboBox.getItemAt(FlightArrivalMinuteComboBox.getSelectedIndex());
+        String hoursDurationsScale = FlightScaleHourComboBox.getItemAt(FlightScaleHourComboBox.getSelectedIndex());
+        String minutesDurationsScale = FlightScaleMinuteComboBox.getItemAt(FlightScaleMinuteComboBox.getSelectedIndex());
 
-        LocalDateTime departureDate = LocalDateTime.of(year, month, day, hour, minutes);
+        Response response = this.flightController.createFlight(id, planeId, departureLocationId, arrivalLocationId, scaleLocationId, year, month, day, hour, minutes, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale); //
 
-        Plane plane = null;
-        for (Plane p : this.planes) {
-            if (planeId.equals(p.getId())) {
-                plane = p;
-            }
-        }
-
-        Location departure = null;
-        Location arrival = null;
-        Location scale = null;
-        for (Location location : this.locations) {
-            if (departureLocationId.equals(location.getAirportId())) {
-                departure = location;
-            }
-            if (arrivalLocationId.equals(location.getAirportId())) {
-                arrival = location;
-            }
-            if (scaleLocationId.equals(location.getAirportId())) {
-                scale = location;
-            }
-        }
-
-        if (scale == null) {
-            this.flights.add(new Flight(id, plane, departure, arrival, departureDate, hoursDurationsArrival, minutesDurationsArrival));
+        if (response.getStatus() >= 500) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
+        } else if (response.getStatus() >= 400) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE); //
         } else {
-            this.flights.add(new Flight(id, plane, departure, scale, arrival, departureDate, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale));
-        }
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE); //
 
-        this.AddToFlightFlightComboBox.addItem(id);
+            FlightIDTextField.setText("");
+            FlightPlaneComboBox.setSelectedIndex(0);
+            FlightDepartureLocationComboBox.setSelectedIndex(0);
+            FlightArrivalLocationComboBox.setSelectedIndex(0);
+            FlightScaleLocationComboBox.setSelectedIndex(0);
+            FlightDepartureDateYearTextField.setText("");
+            FlightDepartureDateMonthComboBox.setSelectedIndex(0);
+            FlightDepartureDateDayComboBox.setSelectedIndex(0);
+            FlightDepartureDateHourComboBox.setSelectedIndex(0);
+            FlightDepartureDateMinuteComboBox.setSelectedIndex(0);
+            FlightArrivalHourComboBox.setSelectedIndex(0);
+            FlightArrivalMinuteComboBox.setSelectedIndex(0);
+            FlightScaleHourComboBox.setSelectedIndex(0);
+            FlightScaleMinuteComboBox.setSelectedIndex(0);
+
+            if (response.getStatus() == Status.CREATED && response.getObject() != null) { //
+                Flight createdFlight = (Flight) response.getObject(); //
+                this.AddToFlightFlightComboBox.addItem(createdFlight.getId());
+                this.DelayFlightIDComboBox.addItem(createdFlight.getId());
+            }
+        }
     }//GEN-LAST:event_FlightCreateButtonActionPerformed
 
     private void UpdateInfoUpdateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateInfoUpdateButtonActionPerformed
-        // TODO add your handling code here:
-        long id = Long.parseLong(UpdateInfoIDTextField.getText());
+        String id = UpdateInfoIDTextField.getText();
         String firstname = UpdateInfoFirstNameTextField.getText();
         String lastname = UpdateInfoLastNameTextField.getText();
-        int year = Integer.parseInt(UpdateInfoBirthdateYearTextField.getText());
-        int month = Integer.parseInt(PassengerMonthComboBox.getItemAt(UpdateInfoBirthdateMonthComboBox.getSelectedIndex()));
-        int day = Integer.parseInt(PassengerDayComboBox.getItemAt(UpdateInfoBirthdateDayComboBox.getSelectedIndex()));
-        int phoneCode = Integer.parseInt(UpdateInfoPhonePrefixTextField.getText());
-        long phone = Long.parseLong(UpdateInfoPhoneTextField.getText());
+        String year = UpdateInfoBirthdateYearTextField.getText();
+        String month = UpdateInfoBirthdateMonthComboBox.getItemAt(UpdateInfoBirthdateMonthComboBox.getSelectedIndex());
+        String day = UpdateInfoBirthdateDayComboBox.getItemAt(UpdateInfoBirthdateDayComboBox.getSelectedIndex());
+        String phoneCode = UpdateInfoPhonePrefixTextField.getText();
+        String phone = UpdateInfoPhoneTextField.getText();
         String country = UpdateInfoCountryTextField.getText();
 
-        LocalDate birthDate = LocalDate.of(year, month, day);
+        Response response = this.passengerController.updatePassenger(id, firstname, lastname, year, month, day, phoneCode, phone, country); //
 
-        Passenger passenger = null;
-        for (Passenger p : this.passengers) {
-            if (p.getId() == id) {
-                passenger = p;
-            }
+        if (response.getStatus() >= 500) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
+        } else if (response.getStatus() >= 400) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE); //
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE); //
+
+            UpdateInfoFirstNameTextField.setText("");
+            UpdateInfoLastNameTextField.setText("");
+            UpdateInfoBirthdateYearTextField.setText("");
+            UpdateInfoBirthdateMonthComboBox.setSelectedIndex(0);
+            UpdateInfoBirthdateDayComboBox.setSelectedIndex(0);
+            UpdateInfoPhonePrefixTextField.setText("");
+            UpdateInfoPhoneTextField.setText("");
+            UpdateInfoCountryTextField.setText("");
         }
-
-        passenger.setFirstname(firstname);
-        passenger.setLastname(lastname);
-        passenger.setBirthDate(birthDate);
-        passenger.setCountryPhoneCode(phoneCode);
-        passenger.setPhone(phone);
-        passenger.setCountry(country);
     }//GEN-LAST:event_UpdateInfoUpdateButtonActionPerformed
 
     private void AddToFlightAddButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddToFlightAddButtonActionPerformed
-        // TODO add your handling code here:
-        long passengerId = Long.parseLong(AddToFlightIDTextField.getText());
+        String passengerId = AddToFlightIDTextField.getText();
         String flightId = AddToFlightFlightComboBox.getItemAt(AddToFlightFlightComboBox.getSelectedIndex());
 
-        Passenger passenger = null;
-        Flight flight = null;
+        Response response = this.flightController.addPassengertoFlight(passengerId, flightId); //
 
-        for (Passenger p : this.passengers) {
-            if (p.getId() == passengerId) {
-                passenger = p;
-            }
+        if (response.getStatus() >= 500) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
+        } else if (response.getStatus() >= 400) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE); //
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE); //
+
+            // AddToFlightIDTextField is usually not cleared here as it's linked to UserSelectComboBox
+            AddToFlightFlightComboBox.setSelectedIndex(0);
         }
-
-        for (Flight f : this.flights) {
-            if (flightId.equals(f.getId())) {
-                flight = f;
-            }
-        }
-
-        passenger.addFlight(flight);
-        flight.addPassenger(passenger);
     }//GEN-LAST:event_AddToFlightAddButtonActionPerformed
 
     private void DelayFlightDelayButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DelayFlightDelayButtonActionPerformed
-        // TODO add your handling code here:
         String flightId = DelayFlightIDComboBox.getItemAt(DelayFlightIDComboBox.getSelectedIndex());
-        int hours = Integer.parseInt(DelayFlightHourComboBox.getItemAt(DelayFlightHourComboBox.getSelectedIndex()));
-        int minutes = Integer.parseInt(DelayFlightMinuteComboBox.getItemAt(DelayFlightMinuteComboBox.getSelectedIndex()));
+        String hours = DelayFlightHourComboBox.getItemAt(DelayFlightHourComboBox.getSelectedIndex());
+        String minutes = DelayFlightMinuteComboBox.getItemAt(DelayFlightMinuteComboBox.getSelectedIndex());
 
-        Flight flight = null;
-        for (Flight f : this.flights) {
-            if (flightId.equals(f.getId())) {
-                flight = f;
-            }
+        Response response = this.flightController.delayFlight(flightId, hours, minutes); //
+
+        if (response.getStatus() >= 500) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
+        } else if (response.getStatus() >= 400) { //
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Error " + response.getStatus(), JOptionPane.WARNING_MESSAGE); //
+        } else {
+            JOptionPane.showMessageDialog(null, response.getMessage(), "Response Message", JOptionPane.INFORMATION_MESSAGE); //
+            DelayFlightIDComboBox.setSelectedIndex(0);
+            DelayFlightHourComboBox.setSelectedIndex(0);
+            DelayFlightMinuteComboBox.setSelectedIndex(0);
         }
-
-        flight.delay(hours, minutes);
     }//GEN-LAST:event_DelayFlightDelayButtonActionPerformed
 
     private void ShowMyFlightsRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowMyFlightsRefreshButtonActionPerformed
-        // TODO add your handling code here:
-        long passengerId = Long.parseLong(UserSelectComboBox.getItemAt(UserSelectComboBox.getSelectedIndex()));
-
-        Passenger passenger = null;
-        for (Passenger p : this.passengers) {
-            if (p.getId() == passengerId) {
-                passenger = p;
-            }
-        }
-
-        ArrayList<Flight> flights = passenger.getFlights();
         DefaultTableModel model = (DefaultTableModel) ShowMyFlightsTable.getModel();
         model.setRowCount(0);
-        for (Flight flight : flights) {
-            model.addRow(new Object[]{flight.getId(), flight.getDepartureDate(), flight.calculateArrivalDate()});
+
+        String selectedPassengerIdStr = UserSelectComboBox.getSelectedItem() != null ? UserSelectComboBox.getSelectedItem().toString() : null;
+
+        if (selectedPassengerIdStr == null || selectedPassengerIdStr.equals("Select User") || selectedPassengerIdStr.trim().isEmpty()) {
+            return;
+        }
+
+        Response response = this.passengerController.getFlightsForPassengerTable(selectedPassengerIdStr); //
+
+        if (response.getStatus() == Status.OK) { //
+            List<Flight> passengerFlights = (List<Flight>) response.getObject(); //
+            if (passengerFlights != null) {
+                for (Flight flight : passengerFlights) {
+                    model.addRow(new Object[]{
+                        flight.getId(),
+                        flight.getDepartureDate() != null ? flight.getDepartureDate().toString() : "N/A",
+                        flight.calculateArrivalDate() != null ? flight.calculateArrivalDate().toString() : "N/A"
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
         }
     }//GEN-LAST:event_ShowMyFlightsRefreshButtonActionPerformed
 
     private void ShowAllPassengersRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllPassengersRefreshButtonActionPerformed
-        // TODO add your handling code here:
+        Response response = this.passengerController.getAllPassengersForTable(); //
         DefaultTableModel model = (DefaultTableModel) ShowAllPassengersTable.getModel();
         model.setRowCount(0);
-        for (Passenger passenger : this.passengers) {
-            model.addRow(new Object[]{passenger.getId(), passenger.getFullname(), passenger.getBirthDate(), passenger.calculateAge(), passenger.generateFullPhone(), passenger.getCountry(), passenger.getNumFlights()});
+
+        if (response.getStatus() == Status.OK) { //
+            List<Passenger> passengersList = (List<Passenger>) response.getObject(); //
+            if (passengersList != null) {
+                for (Passenger passenger : passengersList) {
+                    model.addRow(new Object[]{
+                        passenger.getId(),
+                        passenger.getFullname(),
+                        passenger.getBirthDate() != null ? passenger.getBirthDate().toString() : "N/A",
+                        passenger.calculateAge(),
+                        passenger.generateFullPhone(),
+                        passenger.getCountry(),
+                        passenger.getNumFlights()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
         }
     }//GEN-LAST:event_ShowAllPassengersRefreshButtonActionPerformed
 
     private void ShowAllFlightsRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllFlightsRefreshButtonActionPerformed
-        // TODO add your handling code here:
+        Response response = this.flightController.getAllFlightsForTable(); //
         DefaultTableModel model = (DefaultTableModel) ShowAllFlightsTable.getModel();
         model.setRowCount(0);
-        for (Flight flight : this.flights) {
-            model.addRow(new Object[]{flight.getId(), flight.getDepartureLocation().getAirportId(), flight.getArrivalLocation().getAirportId(), (flight.getScaleLocation() == null ? "-" : flight.getScaleLocation().getAirportId()), flight.getDepartureDate(), flight.calculateArrivalDate(), flight.getPlane().getId(), flight.getNumPassengers()});
+
+        if (response.getStatus() == Status.OK) { //
+            List<Flight> flightsList = (List<Flight>) response.getObject(); //
+            if (flightsList != null) {
+                for (Flight flight : flightsList) {
+                    String scaleAirportId = (flight.getScaleLocation() == null) ? "-" : flight.getScaleLocation().getAirportId();
+                    model.addRow(new Object[]{
+                        flight.getId(),
+                        flight.getDepartureLocation() != null ? flight.getDepartureLocation().getAirportId() : "N/A",
+                        flight.getArrivalLocation() != null ? flight.getArrivalLocation().getAirportId() : "N/A",
+                        scaleAirportId,
+                        flight.getDepartureDate() != null ? flight.getDepartureDate().toString() : "N/A",
+                        flight.calculateArrivalDate() != null ? flight.calculateArrivalDate().toString() : "N/A",
+                        flight.getPlane() != null ? flight.getPlane().getId() : "N/A",
+                        flight.getNumPassengers()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
         }
     }//GEN-LAST:event_ShowAllFlightsRefreshButtonActionPerformed
 
     private void ShowAllPlanesRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllPlanesRefreshButtonActionPerformed
-        // TODO add your handling code here:
+        Response response = this.planeController.getAllPlanesForTable(); //
         DefaultTableModel model = (DefaultTableModel) ShowAllPlanesTable.getModel();
         model.setRowCount(0);
-        for (Plane plane : this.planes) {
-            model.addRow(new Object[]{plane.getId(), plane.getBrand(), plane.getModel(), plane.getMaxCapacity(), plane.getAirline(), plane.getNumFlights()});
+
+        if (response.getStatus() == Status.OK) { //
+            List<Plane> planesList = (List<Plane>) response.getObject(); //
+            if (planesList != null) {
+                for (Plane plane : planesList) {
+                    model.addRow(new Object[]{
+                        plane.getId(),
+                        plane.getBrand(),
+                        plane.getModel(),
+                        plane.getMaxCapacity(),
+                        plane.getAirline(),
+                        plane.getNumFlights()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
         }
     }//GEN-LAST:event_ShowAllPlanesRefreshButtonActionPerformed
 
     private void ShowAllLocationsRefreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShowAllLocationsRefreshButtonActionPerformed
-        // TODO add your handling code here:
+        Response response = this.locationController.getAllLocationsForTable(); //
         DefaultTableModel model = (DefaultTableModel) ShowAllLocationsTable.getModel();
         model.setRowCount(0);
-        for (Location location : this.locations) {
-            model.addRow(new Object[]{location.getAirportId(), location.getAirportName(), location.getAirportCity(), location.getAirportCountry()});
+
+        if (response.getStatus() == Status.OK) { //
+            List<Location> locationsList = (List<Location>) response.getObject(); //
+            if (locationsList != null) {
+                for (Location location : locationsList) {
+                    model.addRow(new Object[]{
+                        location.getAirportId(),
+                        location.getAirportName(),
+                        location.getAirportCity(),
+                        location.getAirportCountry()
+                    });
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "Error " + response.getStatus(), JOptionPane.ERROR_MESSAGE); //
         }
     }//GEN-LAST:event_ShowAllLocationsRefreshButtonActionPerformed
 
@@ -1668,11 +1954,10 @@ public class AirportFrame extends javax.swing.JFrame {
     private void UserSelectComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UserSelectComboBoxActionPerformed
         try {
             String id = UserSelectComboBox.getSelectedItem().toString();
-            if (! id.equals(UserSelectComboBox.getItemAt(0))) {
+            if (!id.equals(UserSelectComboBox.getItemAt(0))) {
                 UpdateInfoIDTextField.setText(id);
                 AddToFlightIDTextField.setText(id);
-            }
-            else{
+            } else {
                 UpdateInfoIDTextField.setText("");
                 AddToFlightIDTextField.setText("");
             }
@@ -1687,7 +1972,6 @@ public class AirportFrame extends javax.swing.JFrame {
     /**
      * @param args the command line arguments
      */
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddToFlightAddButton;

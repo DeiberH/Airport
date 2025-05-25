@@ -3,9 +3,9 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Juan%20Sebastian/Documents/GitHub/Airport/src/airport/view/AirportFrame.java</file>
-            <file>file:/C:/Users/Juan%20Sebastian/Documents/GitHub/Airport/src/airport/main/Main.java</file>
-            <file>file:/C:/Users/Juan%20Sebastian/Documents/GitHub/Airport/src/airport/model/Location.java</file>
+            <file>file:/C:/Users/deibe/Documents/NetBeansProjects/Airport/src/airport/view/AirportFrame.java</file>
+            <file>file:/C:/Users/deibe/Documents/NetBeansProjects/Airport/src/airport/controller/FlightController.java</file>
+            <file>file:/C:/Users/deibe/Documents/NetBeansProjects/Airport/src/airport/controller/validation/FlightValidation.java</file>
         </group>
     </open-files>
 </project-private>
