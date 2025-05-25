@@ -1,7 +1,7 @@
 package airport.controller.validation.service;
 
-import airport.controller.interfaces.ILocationValidator; // Interface from correct package
-import airport.controller.validation.LocationValidation; // Your static validation class
+import airport.controller.interfaces.ILocationValidator;
+import airport.controller.validation.LocationValidation;
 
 public class LocationValidatorService implements ILocationValidator {
     @Override

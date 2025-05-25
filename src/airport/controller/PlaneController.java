@@ -23,7 +23,7 @@ public class PlaneController {
         this.planeFactory = planeFactory;
     }
 
-    public Response createPlane(String idStr, String brandStr, String modelStr, String maxCapacityStr, String airlineStr) { // Renamed for convention
+    public Response createPlane(String idStr, String brandStr, String modelStr, String maxCapacityStr, String airlineStr) { //
         try {
             String error = planeValidator.validatePlaneData(idStr, brandStr, modelStr, maxCapacityStr, airlineStr);
             if (error != null) {
@@ -53,7 +53,7 @@ public class PlaneController {
         }
     }
 
-    public Response getAllPlanesForTable() {
+    public Response getAllPlanesForTable() { //
         try {
             List<Plane> planes = planeRepository.getAllPlanes();
             if (planes.isEmpty()) {

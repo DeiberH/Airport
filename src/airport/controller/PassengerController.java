@@ -25,7 +25,7 @@ public class PassengerController {
         this.passengerFactory = passengerFactory;
     }
 
-    public Response createPassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) {
+    public Response createPassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) { //
         try {
             String error = passengerValidator.validatePassengerData(idStr, firstnameStr, lastnameStr, yearStr, monthStr, dayStr, phoneCodeStr, phoneStr, countryStr);
             if (error != null) {
@@ -61,9 +61,9 @@ public class PassengerController {
         }
     }
 
-    public Response updatePassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) {
+    public Response updatePassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) { //
         try {
-            if (idStr == null || idStr.trim().isEmpty()) { // Basic ID check before parsing
+            if (idStr == null || idStr.trim().isEmpty()) {
                 return new Response("Passenger ID for update must not be empty.", Status.BAD_REQUEST);
             }
             long idLong = Long.parseLong(idStr.trim());
@@ -73,7 +73,6 @@ public class PassengerController {
                 return new Response("Passenger with ID '" + idLong + "' not found for update.", Status.NOT_FOUND);
             }
 
-            // Validate *new* data. Note: validatePassengerData might re-check ID, which is fine.
             String error = passengerValidator.validatePassengerData(idStr, firstnameStr, lastnameStr, yearStr, monthStr, dayStr, phoneCodeStr, phoneStr, countryStr);
             if (error != null) {
                 return new Response(error, Status.BAD_REQUEST);
@@ -96,7 +95,9 @@ public class PassengerController {
             passenger.setPhone(phoneLong);
             passenger.setCountry(country);
 
-            passengerRepository.updatePassenger(passenger); // Explicit update call
+            if (!passengerRepository.updatePassenger(passenger)) {
+                 return new Response("Failed to update passenger in storage.", Status.INTERNAL_SERVER_ERROR);
+            }
 
             Passenger passengerCopy = passengerFactory.build(passenger.getId(), passenger.getFirstname(), passenger.getLastname(),
                                                               passenger.getBirthDate(), passenger.getCountryPhoneCode(),
@@ -110,7 +111,7 @@ public class PassengerController {
         }
     }
 
-    public Response getAllPassengersForTable() {
+    public Response getAllPassengersForTable() { //
         try {
             List<Passenger> passengers = passengerRepository.getAllPassengers();
             if (passengers.isEmpty()) {
@@ -122,7 +123,7 @@ public class PassengerController {
         }
     }
 
-    public Response getFlightsForPassengerTable(String passengerIdStr) {
+    public Response getFlightsForPassengerTable(String passengerIdStr) { //
         try {
             if (passengerIdStr == null || passengerIdStr.trim().isEmpty()) {
                 return new Response("Passenger ID must not be empty.", Status.BAD_REQUEST);
@@ -133,7 +134,7 @@ public class PassengerController {
             if (passenger == null) {
                 return new Response("Passenger not found with ID: " + idLong, Status.NOT_FOUND);
             }
-            List<Flight> flights = passenger.getFlights2(); // Using getFlights2 as per your controller
+            List<Flight> flights = passenger.getFlights2(); //
             if (flights.isEmpty()) {
                 return new Response("No flights found for this passenger.", Status.OK, new ArrayList<>());
             }

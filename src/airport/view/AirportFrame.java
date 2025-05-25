@@ -4,6 +4,8 @@
  */
 package airport.view;
 
+import airport.utils.observer.Observer;
+
 import airport.controller.FlightController;
 import airport.controller.LocationController;
 import airport.controller.PassengerController;
@@ -38,6 +40,7 @@ import airport.model.storage.StorageFlight;
 import airport.model.storage.StorageLocation;
 import airport.model.storage.StoragePassenger;
 import airport.model.storage.StoragePlane;
+import airport.utils.observer.Subject;
 import java.awt.Color;
 import java.util.List;
 import javax.swing.JOptionPane;
@@ -47,7 +50,7 @@ import javax.swing.table.DefaultTableModel;
  *
  * @author edangulo
  */
-public class AirportFrame extends javax.swing.JFrame {
+public class AirportFrame extends javax.swing.JFrame implements Observer {
 
     /**
      * Creates new form AirportFrame
@@ -58,44 +61,96 @@ public class AirportFrame extends javax.swing.JFrame {
     private final PlaneController planeController;
     private final FlightController flightController;
 
+    // Repositories are also subjects now
+    private final ILocationRepository locationRepository;
+    private final IPassengerRepository passengerRepository;
+    private final IPlaneRepository planeRepository;
+    private final IFlightRepository flightRepository;
+
     public AirportFrame() {
-        initComponents(); // Your existing UI setup
+        initComponents();
 
-        // Location Services
-        ILocationRepository locationRepo = new StorageLocation(); //
+        // 1. Instanciar Repositorios y ASIGNARLOS a las variables miembro
+        this.locationRepository = new StorageLocation();
+        this.passengerRepository = new StoragePassenger();
+        this.planeRepository = new StoragePlane();
+        // StorageFlight necesita los otros repositorios para cargar referencias desde JSON
+        this.flightRepository = new StorageFlight(this.planeRepository, this.locationRepository);
+
+        // 2. Instanciar Validator Services
         ILocationValidator locationVal = new LocationValidatorService();
-        ILocationFactory locationFac = new LocationFactoryService();
-
-        // Passenger Services
-        IPassengerRepository passengerRepo = new StoragePassenger(); //
         IPassengerValidator passengerVal = new PassengerValidatorService();
-        IPassengerFactory passengerFac = new PassengerFactoryService();
-
-        // Plane Services
-        IPlaneRepository planeRepo = new StoragePlane(); //
         IPlaneValidator planeVal = new PlaneValidatorService();
-        IPlaneFactory planeFac = new PlaneFactoryService();
-
-        // Flight Services
-        IFlightRepository flightRepo = new StorageFlight(); //
         IFlightValidator flightVal = new FlightValidatorService();
+
+        // 3. Instanciar Factory Services
+        ILocationFactory locationFac = new LocationFactoryService();
+        IPassengerFactory passengerFac = new PassengerFactoryService();
+        IPlaneFactory planeFac = new PlaneFactoryService();
         IFlightFactory flightFac = new FlightFactoryService();
 
-        // Instantiate Controllers with Injected Dependencies
-        this.locationController = new LocationController(locationRepo, locationVal, locationFac);
-        this.passengerController = new PassengerController(passengerRepo, passengerVal, passengerFac);
-        this.planeController = new PlaneController(planeRepo, planeVal, planeFac);
-        // FlightController needs multiple repositories for creating flights (Plane and Location lookup)
-        this.flightController = new FlightController(flightRepo, flightVal, flightFac, planeRepo, locationRepo, passengerRepo);
+        // 4. Instanciar Controllers con las dependencias (usando las variables miembro de repositorio donde sea apropiado)
+        this.locationController = new LocationController(this.locationRepository, locationVal, locationFac);
+        this.passengerController = new PassengerController(this.passengerRepository, passengerVal, passengerFac);
+        this.planeController = new PlaneController(this.planeRepository, planeVal, planeFac);
+        this.flightController = new FlightController(
+                this.flightRepository,
+                flightVal,
+                flightFac,
+                this.planeRepository, // Pasar la instancia miembro
+                this.locationRepository, // Pasar la instancia miembro
+                this.passengerRepository // Pasar la instancia miembro
+        );
 
+        // 5. Registrar AirportFrame como Observer a las instancias miembro de repositorios
+        // (Asegúrate que tus clases Storage* implementen la interfaz Subject)
+        if (this.locationRepository instanceof Subject) {
+            ((Subject) this.locationRepository).registerObserver(this);
+        }
+        if (this.passengerRepository instanceof Subject) {
+            ((Subject) this.passengerRepository).registerObserver(this);
+        }
+        if (this.planeRepository instanceof Subject) {
+            ((Subject) this.planeRepository).registerObserver(this);
+        }
+        if (this.flightRepository instanceof Subject) {
+            ((Subject) this.flightRepository).registerObserver(this);
+        }
+
+        refreshAllTables(); // Carga inicial de datos en tablas
+
+        // Resto de tu configuración del constructor
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
-
         this.generateMonths();
         this.generateDays();
         this.generateHours();
         this.generateMinutes();
         this.blockPanels();
+    }
+
+    @Override
+    public void update() {
+        // A simple way is to refresh all tables.
+        // For more specific updates, the notifyObservers() could pass an argument
+        // or you could have different update methods.
+        System.out.println("Data changed, refreshing tables..."); // For debugging
+        refreshAllTables();
+    }
+
+    private void refreshAllTables() {
+        // Call your existing refresh button actions, or their core logic
+        ShowAllPassengersRefreshButtonActionPerformed(null); // Pass null or a dummy event
+        ShowAllPlanesRefreshButtonActionPerformed(null);
+        ShowAllLocationsRefreshButtonActionPerformed(null);
+        ShowAllFlightsRefreshButtonActionPerformed(null);
+        // Potentially refresh "My Flights" if a user is selected, or clear it
+        if (UserSelectComboBox.getSelectedIndex() > 0) { // Assuming index 0 is "Select User"
+            ShowMyFlightsRefreshButtonActionPerformed(null);
+        } else {
+            DefaultTableModel myFlightsModel = (DefaultTableModel) ShowMyFlightsTable.getModel();
+            myFlightsModel.setRowCount(0);
+        }
     }
 
     private void blockPanels() {
@@ -1710,9 +1765,9 @@ public class AirportFrame extends javax.swing.JFrame {
         model.setRowCount(0);
 
         String selectedPassengerIdStr = UserSelectComboBox.getSelectedItem() != null ? UserSelectComboBox.getSelectedItem().toString() : null;
-        
+
         if (selectedPassengerIdStr == null || selectedPassengerIdStr.equals("Select User") || selectedPassengerIdStr.trim().isEmpty()) {
-            return; 
+            return;
         }
 
         Response response = this.passengerController.getFlightsForPassengerTable(selectedPassengerIdStr); //
