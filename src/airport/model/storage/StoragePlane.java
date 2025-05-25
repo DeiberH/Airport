@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class StoragePlane implements IPlaneRepository, Subject {
+
     private ArrayList<Plane> planes;
     private final String filePath = "json/planes.json";
     private final List<Observer> observers;
@@ -66,5 +67,17 @@ public class StoragePlane implements IPlaneRepository, Subject {
         for (Observer observer : this.observers) {
             observer.update();
         }
+    }
+
+    @Override
+    public boolean updatePlane(Plane planeToUpdate) {
+        for (int i = 0; i < this.planes.size(); i++) {
+            if (this.planes.get(i).getId().equals(planeToUpdate.getId())) {
+                this.planes.set(i, planeToUpdate); // Reemplaza con la instancia actualizada
+                saveToDisk(); // Guarda y notifica
+                return true;
+            }
+        }
+        return false; // Avión no encontrado para actualizar
     }
 }

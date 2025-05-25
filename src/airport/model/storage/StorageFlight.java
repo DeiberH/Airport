@@ -16,11 +16,12 @@ import java.util.List;
 import java.util.Optional;
 
 public class StorageFlight implements IFlightRepository, Subject {
+
     private ArrayList<Flight> flights;
     private final String filePath = "json/flights.json";
     private final List<Observer> observers;
-    private final IPlaneRepository planeRepository; 
-    private final ILocationRepository locationRepository; 
+    private final IPlaneRepository planeRepository;
+    private final ILocationRepository locationRepository;
 
     public StorageFlight(IPlaneRepository planeRepository, ILocationRepository locationRepository) {
         this.observers = new ArrayList<>();
@@ -28,8 +29,8 @@ public class StorageFlight implements IFlightRepository, Subject {
         this.locationRepository = locationRepository;
         loadInitialData();
     }
-    
-    private void loadInitialData(){
+
+    private void loadInitialData() {
         List<Plane> allPlanes = this.planeRepository.getAllPlanes();
         List<Location> allLocations = this.locationRepository.getAllLocations();
         this.flights = new ArrayList<>(JsonDataManager.loadFlights(filePath, allPlanes, allLocations));
@@ -81,5 +82,17 @@ public class StorageFlight implements IFlightRepository, Subject {
         for (Observer observer : this.observers) {
             observer.update();
         }
+    }
+
+    @Override
+    public boolean updateFlight(Flight flightToUpdate) {
+        for (int i = 0; i < this.flights.size(); i++) {
+            if (this.flights.get(i).getId().equals(flightToUpdate.getId())) {
+                this.flights.set(i, flightToUpdate); // Reemplaza con la instancia actualizada
+                saveToDisk(); // Guarda y notifica
+                return true;
+            }
+        }
+        return false; // Vuelo no encontrado para actualizar
     }
 }
