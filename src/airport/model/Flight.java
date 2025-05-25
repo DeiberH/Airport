@@ -62,7 +62,7 @@ public class Flight {
         return id;
     }
     
-    public ArrayList<Passenger> getPassangers () {
+    public ArrayList<Passenger> getPassengers () {
         return this.passengers;
     }
 

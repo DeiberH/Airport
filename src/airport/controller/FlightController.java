@@ -4,8 +4,10 @@
  */
 package airport.controller;
 
+import airport.controller.builder.FlightBuilder;
 import airport.controller.utils.Response;
 import airport.controller.utils.Status;
+import airport.controller.validation.FlightValidation;
 import airport.model.Flight;
 import airport.model.Location;
 import airport.model.Passenger;
@@ -14,7 +16,6 @@ import airport.model.storage.StorageFlight;
 import airport.model.storage.StorageLocation;
 import airport.model.storage.StoragePassenger;
 import airport.model.storage.StoragePlane;
-import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,163 +24,150 @@ import java.util.List;
  *
  * @author Derby42
  */
-// CORREGIR LOS ERRORES DE LOS PARSEINT DEL TIEMPO
 public class FlightController {
 
     public static Response createFlight(String id, String planeId, String departureLocationId, String arrivalLocationId, String scaleLocationId, String year, String month, String day, String hour, String minutes, String hoursDurationsArrival, String minutesDurationsArrival, String hoursDurationsScale, String minutesDurationsScale) {
-        try {
-            // ... (all previous validations for ID, plane, date, locations, durations remain here)
-            int yearInt, monthInt, dayInt, hoursInt, minutesInt, hourdaInt, minutesdaInt, hourdsInt, minutesdsInt;
-            LocalDateTime departureDate;
-            
-            // ID Validation (XXXYYY format)
-            if (id.trim().isEmpty()) {
-                return new Response("Flight Id must not be empty", Status.BAD_REQUEST);
-            }
-            if (id.length() != 6) {
-                return new Response("Flight Id must have a length of 6 characters (XXXYYY)", Status.BAD_REQUEST);
-            }
-            for (int i = 0; i < 3; i++) {
-                if (!Character.isUpperCase(id.charAt(i))) {
-                    return new Response("First 3 characters of Flight Id must be uppercase letters (XXXYYY)", Status.BAD_REQUEST);
-                }
-            }
-            for (int i = 3; i < 6; i++) {
-                if (!Character.isDigit(id.charAt(i))) {
-                    return new Response("Last 3 characters of Flight Id must be digits (XXXYYY)", Status.BAD_REQUEST);
-                }
+        try {            
+            String validationError = FlightValidation.validateFlightData(id, planeId, departureLocationId, arrivalLocationId, scaleLocationId, year, month, day, hour, minutes, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale);
+            if (validationError != null) {
+                return new Response(validationError, Status.BAD_REQUEST);
             }
 
-            // Plane Validation
-            StoragePlane storagep = StoragePlane.getInstance();
-            Plane plane = storagep.getPlane(planeId);
+            Plane plane = StoragePlane.getInstance().getPlane(planeId.trim());
             if (plane == null) {
-                return new Response("The selected Plane ('" + planeId + "') is not valid or does not exist.", Status.BAD_REQUEST);
+                return new Response("Selected Plane ('" + planeId.trim() + "') not found.", Status.BAD_REQUEST);
             }
 
-            // Date Validation
-            if (year.trim().isEmpty()) { return new Response("Departure year must not be empty", Status.BAD_REQUEST); }
-            try {
-                yearInt = Integer.parseInt(year);
-                if (yearInt < 1900) { return new Response("Departure year must be valid [>=1900]", Status.BAD_REQUEST); }
-            } catch (NumberFormatException ex) { return new Response("Departure year must be numeric", Status.BAD_REQUEST); }
-            try {
-                monthInt = Integer.parseInt(month); dayInt = Integer.parseInt(day); hoursInt = Integer.parseInt(hour); minutesInt = Integer.parseInt(minutes);
-                departureDate = LocalDateTime.of(yearInt, monthInt, dayInt, hoursInt, minutesInt);
-                if (departureDate.isBefore(LocalDateTime.now())) { return new Response("Departure date must be in the future.", Status.BAD_REQUEST); }
-            } catch (DateTimeException ex) { return new Response("Departure Date/Time format is not valid or realistic (e.g., Feb 30).", Status.BAD_REQUEST);
-            } catch (NumberFormatException ex) { return new Response("Departure date/time components (month, day, hour, minute) must be numeric.", Status.BAD_REQUEST); }
+            LocalDateTime departureDate;
+            int yearInt = Integer.parseInt(year.trim());
+            int monthInt = Integer.parseInt(month.trim());
+            int dayInt = Integer.parseInt(day.trim());
+            int hoursInt = Integer.parseInt(hour.trim());
+            int minutesInt = Integer.parseInt(minutes.trim());
+            departureDate = LocalDateTime.of(yearInt, monthInt, dayInt, hoursInt, minutesInt);
 
-            // Location Validations
-            StorageLocation storagel = StorageLocation.getInstance();
-            Location dLocation = storagel.getLocation(departureLocationId);
-            Location aLocation = storagel.getLocation(arrivalLocationId);
-            if (dLocation == null) { return new Response("A valid Departure Location ('" + departureLocationId + "') must be selected/exist.", Status.BAD_REQUEST); }
-            if (aLocation == null) { return new Response("A valid Arrival Location ('" + arrivalLocationId + "') must be selected/exist.", Status.BAD_REQUEST); }
-            if (dLocation.getAirportId().equals(aLocation.getAirportId())) { return new Response("Departure and Arrival locations cannot be the same.", Status.BAD_REQUEST); }
+            Location dLocation = StorageLocation.getInstance().getLocation(departureLocationId.trim());
+            if (dLocation == null) {
+                return new Response("Departure Location ('" + departureLocationId.trim() + "') not found.", Status.BAD_REQUEST);
+            }
+            Location aLocation = StorageLocation.getInstance().getLocation(arrivalLocationId.trim());
+            if (aLocation == null) {
+                return new Response("Arrival Location ('" + arrivalLocationId.trim() + "') not found.", Status.BAD_REQUEST);
+            }
 
-            // Arrival Duration Validation
-            try {
-                hourdaInt = Integer.parseInt(hoursDurationsArrival); minutesdaInt = Integer.parseInt(minutesDurationsArrival);
-                if (hourdaInt < 0 || minutesdaInt < 0 || (hourdaInt == 0 && minutesdaInt == 0)) { return new Response("Arrival duration time must be greater than 00:00 and positive.", Status.BAD_REQUEST); }
-                if (minutesdaInt >= 60) { return new Response("Arrival duration minutes must be less than 60.", Status.BAD_REQUEST); }
-            } catch (NumberFormatException ex) { return new Response("Arrival duration hours and minutes must be numeric.", Status.BAD_REQUEST); }
+            if (dLocation.getAirportId().equals(aLocation.getAirportId())) {
+                return new Response("Departure and Arrival locations cannot be the same.", Status.BAD_REQUEST);
+            }
 
-            // Scale Location and Duration Validation
+            int hourdaInt = Integer.parseInt(hoursDurationsArrival.trim());
+            int minutesdaInt = Integer.parseInt(minutesDurationsArrival.trim());
+
             Location sLocation = null;
-            boolean isPlaceholderScale = scaleLocationId == null || scaleLocationId.trim().isEmpty() || scaleLocationId.equals("Location"); 
-            if (!isPlaceholderScale) {
-                sLocation = storagel.getLocation(scaleLocationId);
-                if (sLocation == null) { return new Response("The selected Scale Location ('" + scaleLocationId + "') is not valid or does not exist.", Status.BAD_REQUEST); }
-                if (sLocation.getAirportId().equals(dLocation.getAirportId()) || sLocation.getAirportId().equals(aLocation.getAirportId())) { return new Response("Scale location cannot be the same as departure or arrival location.", Status.BAD_REQUEST); }
-            }
-            try {
-                hourdsInt = Integer.parseInt(hoursDurationsScale); minutesdsInt = Integer.parseInt(minutesDurationsScale);
-                if (hourdsInt < 0 || minutesdsInt < 0) { return new Response("Scale duration time must be positive or zero.", Status.BAD_REQUEST); }
-                if (minutesdsInt >= 60) { return new Response("Scale duration minutes must be less than 60.", Status.BAD_REQUEST); }
-            } catch (NumberFormatException ex) { return new Response("Scale duration hours and minutes must be numeric.", Status.BAD_REQUEST); }
-            if (sLocation == null) {
-                if (hourdsInt != 0 || minutesdsInt != 0) { return new Response("If no scale location is selected, duration time of scale must be 00:00.", Status.BAD_REQUEST); }
+            int hourdsInt = 0;
+            int minutesdsInt = 0;
+
+            boolean isScaleLocationSelected = !(scaleLocationId == null || scaleLocationId.trim().isEmpty() || scaleLocationId.trim().equals("Location"));
+
+            if (isScaleLocationSelected) {
+                sLocation = StorageLocation.getInstance().getLocation(scaleLocationId.trim());
+                if (sLocation == null) {
+                    return new Response("Selected Scale Location ('" + scaleLocationId.trim() + "') not found.", Status.BAD_REQUEST);
+                }
+                if (sLocation.getAirportId().equals(dLocation.getAirportId()) || sLocation.getAirportId().equals(aLocation.getAirportId())) {
+                    return new Response("Scale location cannot be the same as departure or arrival location.", Status.BAD_REQUEST);
+                }
+                boolean isScaleDurationHourProvided = !(hoursDurationsScale == null || hoursDurationsScale.trim().isEmpty() || hoursDurationsScale.equals("Hour"));
+                boolean isScaleDurationMinuteProvided = !(minutesDurationsScale == null || minutesDurationsScale.trim().isEmpty() || minutesDurationsScale.equals("Minute"));
+
+                if (isScaleDurationHourProvided && isScaleDurationMinuteProvided) {
+                    hourdsInt = Integer.parseInt(hoursDurationsScale.trim());
+                    minutesdsInt = Integer.parseInt(minutesDurationsScale.trim());
+                }
+                if (hourdsInt == 0 && minutesdsInt == 0) {
+                    return new Response("If a scale location is selected, its duration time must be greater than 00:00.", Status.BAD_REQUEST);
+                }
+
             } else {
-                if (hourdsInt == 0 && minutesdsInt == 0) { return new Response("If a scale location is selected, its duration time must be greater than 00:00.", Status.BAD_REQUEST); }
+                boolean isScaleDurationHourProvided = !(hoursDurationsScale == null || hoursDurationsScale.trim().isEmpty() || hoursDurationsScale.equals("Hour"));
+                boolean isScaleDurationMinuteProvided = !(minutesDurationsScale == null || minutesDurationsScale.trim().isEmpty() || minutesDurationsScale.equals("Minute"));
+                if (isScaleDurationHourProvided || isScaleDurationMinuteProvided) {
+                    hourdsInt = Integer.parseInt(hoursDurationsScale.trim());
+                    minutesdsInt = Integer.parseInt(minutesDurationsScale.trim());
+                    if (hourdsInt != 0 || minutesdsInt != 0) {
+                        return new Response("If no scale location is selected, duration time of scale must be 00:00.", Status.BAD_REQUEST);
+                    }
+                }
             }
-            // End of Validations
+
+            Flight newFlight;
+            if (sLocation == null) {
+                newFlight = FlightBuilder.build(id, plane, dLocation, aLocation, departureDate, hourdaInt, minutesdaInt);
+            } else {
+                newFlight = FlightBuilder.build(id, plane, dLocation, sLocation, aLocation, departureDate, hourdaInt, minutesdaInt, hourdsInt, minutesdsInt);
+            }
 
             StorageFlight storage = StorageFlight.getInstance();
-            Flight newFlight; // This is the canonical flight object
-
-            if (sLocation == null) {
-                newFlight = new Flight(id, plane, dLocation, aLocation, departureDate, hourdaInt, minutesdaInt);
-            } else {
-                newFlight = new Flight(id, plane, dLocation, sLocation, aLocation, departureDate, hourdaInt, minutesdaInt, hourdsInt, minutesdsInt);
-            }
-
-            // Attempt to add the canonical flight to global storage
             if (!storage.addFlight(newFlight)) {
                 return new Response("A Flight with id '" + id + "' already exists in global storage.", Status.BAD_REQUEST);
             }
+            plane.addFlight(newFlight);
 
-            // **FIX APPLIED HERE**: 
-            // If successfully added to global storage, then associate this flight with the plane.
-            // The Plane.addFlight() method should just add it to its internal list.
-            plane.addFlight(newFlight); 
-
-            // Create the copy for the response. Its constructor (now modified) will NOT call plane.addFlight().
-            Flight flightCopy; 
+            Flight flightCopy;
             if (sLocation == null) {
-                flightCopy = new Flight(id, plane, dLocation, aLocation, departureDate, hourdaInt, minutesdaInt);
+                flightCopy = FlightBuilder.build(id, plane, dLocation, aLocation, departureDate, hourdaInt, minutesdaInt);
             } else {
-                flightCopy = new Flight(id, plane, dLocation, sLocation, aLocation, departureDate, hourdaInt, minutesdaInt, hourdsInt, minutesdsInt);
+                flightCopy = FlightBuilder.build(id, plane, dLocation, sLocation, aLocation, departureDate, hourdaInt, minutesdaInt, hourdsInt, minutesdsInt);
             }
-            // Note: The flightCopy's passengers list will be empty. If the response needs passengers, they'd have to be copied.
-            // For a "created" response, the core flight data (without passengers yet) is usually sufficient.
-            
+
             return new Response("Flight created successfully.", Status.CREATED, flightCopy);
 
+        } catch (NumberFormatException ex) {
+            return new Response("Invalid numeric format for one of the inputs: " + ex.getMessage(), Status.BAD_REQUEST);
         } catch (Exception ex) {
-            // ex.printStackTrace(); 
-            return new Response("Unexpected error during flight creation: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
+            return new Response("An unexpected error occurred during flight creation: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public static Response addPassengertoFlight(String passengerId, String FlightId) {
+    public static Response addPassengertoFlight(String passengerId, String flightId) {
         try {
-            Passenger passenger = null;
-
-            if (passengerId.trim().isEmpty() || passengerId == null) {
-                return new Response("User Hasn't been selected", Status.BAD_REQUEST);
+            String validationError = FlightValidation.validateAddPassengerToFlightData(passengerId, flightId);
+            if (validationError != null) {
+                return new Response(validationError, Status.BAD_REQUEST);
             }
 
-            StoragePassenger storagep = StoragePassenger.getInstance();
+            long passengerIdLong = Long.parseLong(passengerId.trim());
 
-            long idlong = Long.parseLong(passengerId);
-            for (Passenger p : storagep.getPassengers()) {
-                if (p.getId() == idlong) {
-                    passenger = p;
-                }
-            }
-
+            StoragePassenger storagePassenger = StoragePassenger.getInstance();
+            Passenger passenger = storagePassenger.getPassenger(passengerIdLong);
             if (passenger == null) {
-                return new Response("Passenger was not found", Status.BAD_REQUEST);
+                return new Response("Passenger with ID '" + passengerIdLong + "' not found.", Status.NOT_FOUND);
             }
 
-            StorageFlight storagef = StorageFlight.getInstance();
+            StorageFlight storageFlight = StorageFlight.getInstance();
+            Flight flight = storageFlight.getFlight(flightId.trim());
+            if (flight == null) {
+                return new Response("Flight with ID '" + flightId.trim() + "' not found.", Status.NOT_FOUND);
+            }
 
-            for (Flight f : storagef.getFlights()) {
-                if (f.getId().equals(FlightId)) {
-                    for (Passenger p : f.getPassangers()) {
-                        if (p.getId() == passenger.getId()) {
-                            return new Response("Passenger alredy added to flight", Status.BAD_REQUEST);
-                        }
-
-                    }
-                    f.addPassenger(passenger);
-                    return new Response("Passenger added to Flight successfully", Status.OK);
+            for (Passenger p : flight.getPassengers()) {
+                if (p.getId() == passenger.getId()) {
+                    return new Response("Passenger already added to this flight.", Status.BAD_REQUEST);
                 }
             }
-            return new Response("Flight not found", Status.NOT_FOUND);
+
+            if (flight.getPlane() != null && flight.getNumPassengers() >= flight.getPlane().getMaxCapacity()) {
+                return new Response("Flight is full. Cannot add more passengers.", Status.BAD_REQUEST);
+            }
+
+            flight.addPassenger(passenger);
+            passenger.addFlight(flight);
+
+            return new Response("Passenger added to Flight successfully.", Status.OK);
+
+        } catch (NumberFormatException e) {
+            return new Response("Invalid numeric format for Passenger ID.", Status.BAD_REQUEST);
         } catch (Exception ex) {
-            return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+            return new Response("An unexpected error occurred while adding passenger to flight: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -221,13 +209,11 @@ public class FlightController {
     public static Response getAllFlightsForTable() {
         try {
             List<Flight> flights = StorageFlight.getInstance().getAllFlights();
-            // Storage should return sorted copy
             if (flights.isEmpty()) {
                 return new Response("No flights found.", Status.OK, new ArrayList<Flight>());
             }
             return new Response("Flights retrieved successfully.", Status.OK, flights);
         } catch (Exception ex) {
-            // ex.printStackTrace();
             return new Response("Error retrieving flights: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
