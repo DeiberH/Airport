@@ -1,57 +1,40 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package airport.model.storage;
 
 import airport.model.Plane;
+import airport.controller.interfaces.IPlaneRepository; // Corrected package for interface
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
-/**
- *
- * @author Juan Sebastian
- */
-public class StoragePlane {
+public class StoragePlane implements IPlaneRepository {
+    private final ArrayList<Plane> planes;
 
-    private static StoragePlane instance;
-    private ArrayList<Plane> planes;
-
-    public static StoragePlane getInstance() {
-        if (instance == null) {
-            instance = new StoragePlane();
-        }
-        return instance;
-    }
-
-    private StoragePlane() {
+    public StoragePlane() {
         this.planes = new ArrayList<>();
     }
 
+    @Override
     public boolean addPlane(Plane plane) {
-        for (Plane p : this.planes) {
-            if (p.getId().equals(plane.getId())) {
-                return false;
-            }
+        if (planes.stream().anyMatch(p -> p.getId().equals(plane.getId()))) {
+            return false;
         }
         this.planes.add(plane);
         return true;
     }
 
+    @Override
     public Plane getPlane(String id) {
-        for (Plane plane : this.planes) {
-            if (plane.getId().equals(id)) {
-                return plane;
-            }
-        }
-        return null;
+        Optional<Plane> planeOpt = planes.stream()
+                                          .filter(p -> p.getId().equals(id))
+                                          .findFirst();
+        return planeOpt.orElse(null);
     }
 
+    @Override
     public List<Plane> getAllPlanes() {
-        // Sort by ID: "Los aviones se deben obtener de manera ordenada (respecto a su id)."
         ArrayList<Plane> sortedPlanes = new ArrayList<>(this.planes);
         sortedPlanes.sort(Comparator.comparing(Plane::getId));
-        return sortedPlanes; // Return the sorted copy
+        return sortedPlanes;
     }
 }

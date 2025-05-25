@@ -1,57 +1,68 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package airport.controller;
 
-import airport.controller.builder.LocationBuilder;
 import airport.controller.utils.Response;
 import airport.controller.utils.Status;
-import airport.controller.validation.LocationValidation;
 import airport.model.Location;
-import airport.model.storage.StorageLocation;
-import java.math.BigDecimal;
+import airport.controller.interfaces.ILocationRepository;
+import airport.controller.interfaces.ILocationValidator;
+import airport.controller.interfaces.ILocationFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Derby42
- */
 public class LocationController {
+    private final ILocationRepository locationRepository;
+    private final ILocationValidator locationValidator;
+    private final ILocationFactory locationFactory;
 
-    public static Response createLocation(String id, String name, String city, String country, String latitude, String longitude) {
+    public LocationController(ILocationRepository locationRepository,
+                              ILocationValidator locationValidator,
+                              ILocationFactory locationFactory) {
+        this.locationRepository = locationRepository;
+        this.locationValidator = locationValidator;
+        this.locationFactory = locationFactory;
+    }
+
+    public Response createLocation(String idStr, String nameStr, String cityStr, String countryStr, String latitudeStr, String longitudeStr) {
         try {
-            String Error = LocationValidation.validateLocationData(id, name, city, country, latitude, longitude);
-            if (Error != null) {
-                return new Response(Error, Status.BAD_REQUEST);
+            String error = locationValidator.validateLocationData(idStr, nameStr, cityStr, countryStr, latitudeStr, longitudeStr);
+            if (error != null) {
+                return new Response(error, Status.BAD_REQUEST);
             }
             
-            double latDob = Double.parseDouble(latitude);
-            double lonDob = Double.parseDouble(longitude);
+            String id = idStr.trim(); // Use trimmed id
+            String name = nameStr.trim();
+            String city = cityStr.trim();
+            String country = countryStr.trim();
+            double latDob = Double.parseDouble(latitudeStr.trim());
+            double lonDob = Double.parseDouble(longitudeStr.trim());
             
-            Location location = LocationBuilder.build(id, name, city, country, latDob, lonDob);
+            Location newLocation = locationFactory.build(id, name, city, country, latDob, lonDob);
             
-            StorageLocation storage = StorageLocation.getInstance();
-            if (!storage.addLocation(location)) {
-                return new Response("A location with that id already exists", Status.BAD_REQUEST);
+            if (!locationRepository.addLocation(newLocation)) {
+                return new Response("A location with ID '" + id + "' already exists", Status.BAD_REQUEST);
             }
-            return new Response("Location created successfully", Status.CREATED);
+            
+            Location locationCopy = locationFactory.build(newLocation.getAirportId(), newLocation.getAirportName(),
+                                                          newLocation.getAirportCity(), newLocation.getAirportCountry(),
+                                                          newLocation.getAirportLatitude(), newLocation.getAirportLongitude());
+            return new Response("Location created successfully", Status.CREATED, locationCopy);
+
+        } catch (NumberFormatException ex) {
+            return new Response("Invalid numeric format for latitude or longitude.", Status.BAD_REQUEST);
         } catch (Exception ex) {
-            return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+            return new Response("Unexpected error creating location: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public static Response getAllLocationsForTable() {
+    public Response getAllLocationsForTable() {
         try {
-            List<Location> locations = StorageLocation.getInstance().getAllLocations();
-            // Storage should return sorted copy
+            List<Location> locations = locationRepository.getAllLocations();
             if (locations.isEmpty()) {
-                return new Response("No locations found.", Status.OK, new ArrayList<Location>());
+                return new Response("No locations found.", Status.OK, new ArrayList<>());
             }
-            return new Response("Locations retrieved successfully.", Status.OK, locations);
+            return new Response("Locations retrieved successfully.", Status.OK, new ArrayList<>(locations));
         } catch (Exception ex) {
-            // ex.printStackTrace();
             return new Response("Error retrieving locations: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }

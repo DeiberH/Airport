@@ -1,63 +1,51 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package airport.model.storage;
 
 import airport.model.Passenger;
+import airport.controller.interfaces.IPassengerRepository; // Corrected package for interface
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
-/**
- *
- * @author Juan Sebastian
- */
-public class StoragePassenger {
+public class StoragePassenger implements IPassengerRepository {
+    private final ArrayList<Passenger> passengers;
 
-    private static StoragePassenger instance;
-    private ArrayList<Passenger> passengers;
-
-    public static StoragePassenger getInstance() {
-        if (instance == null) {
-            instance = new StoragePassenger();
-        }
-        return instance;
-    }
-
-    private StoragePassenger() {
+    public StoragePassenger() {
         this.passengers = new ArrayList<>();
     }
 
+    @Override
     public boolean addPassenger(Passenger passenger) {
-        for (Passenger p : this.passengers) {
-            if (p.getId() == passenger.getId()) {
-                return false;
-            }
+        if (passengers.stream().anyMatch(p -> p.getId() == passenger.getId())) {
+            return false;
         }
         this.passengers.add(passenger);
         return true;
     }
 
+    @Override
     public Passenger getPassenger(long id) {
-        for (Passenger passenger : this.passengers) {
-            if (passenger.getId() == id) {
-                return passenger;
+        Optional<Passenger> passengerOpt = passengers.stream()
+                                                  .filter(p -> p.getId() == id)
+                                                  .findFirst();
+        return passengerOpt.orElse(null);
+    }
+
+    @Override
+    public boolean updatePassenger(Passenger passengerToUpdate) {
+        for (int i = 0; i < passengers.size(); i++) {
+            if (passengers.get(i).getId() == passengerToUpdate.getId()) {
+                passengers.set(i, passengerToUpdate); // Replace with the updated instance
+                return true;
             }
         }
-        return null;
+        return false; // Passenger not found
     }
 
-    public ArrayList<Passenger> getPassengers() {
-        return passengers;
-    }
-
+    @Override
     public List<Passenger> getAllPassengers() {
-        // Sort by ID as per requirements: "Los pasajeros se deben obtener de manera ordenada (respecto a su id)."
-        // Create a temporary list to sort, or sort a copy
         ArrayList<Passenger> sortedPassengers = new ArrayList<>(this.passengers);
         sortedPassengers.sort(Comparator.comparingLong(Passenger::getId));
-        return sortedPassengers; // Return the sorted copy
+        return sortedPassengers;
     }
-
 }

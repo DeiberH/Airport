@@ -1,82 +1,94 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package airport.controller;
 
 import airport.controller.utils.Response;
 import airport.controller.utils.Status;
-import airport.controller.validation.PassengerValidation;
-import airport.controller.builder.PassengerBuilder;
 import airport.model.Flight;
 import airport.model.Passenger;
-import airport.model.storage.StoragePassenger;
+import airport.controller.interfaces.IPassengerRepository;
+import airport.controller.interfaces.IPassengerValidator;
+import airport.controller.interfaces.IPassengerFactory;
+
 import java.time.LocalDate;
-import java.time.DateTimeException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Derby42
- */
 public class PassengerController {
+    private final IPassengerRepository passengerRepository;
+    private final IPassengerValidator passengerValidator;
+    private final IPassengerFactory passengerFactory;
 
-    public static Response createPassenger(String id, String firstname, String lastname, String year, String month, String day, String phoneCode, String phone, String country) {
+    public PassengerController(IPassengerRepository passengerRepository,
+                               IPassengerValidator passengerValidator,
+                               IPassengerFactory passengerFactory) {
+        this.passengerRepository = passengerRepository;
+        this.passengerValidator = passengerValidator;
+        this.passengerFactory = passengerFactory;
+    }
+
+    public Response createPassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) {
         try {
-            String Error = PassengerValidation.validatePassengerData(id, firstname, lastname, year, month, day, phoneCode, phone, country);
-            if (Error != null) {
-                return new Response(Error, Status.BAD_REQUEST);
+            String error = passengerValidator.validatePassengerData(idStr, firstnameStr, lastnameStr, yearStr, monthStr, dayStr, phoneCodeStr, phoneStr, countryStr);
+            if (error != null) {
+                return new Response(error, Status.BAD_REQUEST);
             }
 
-            long idLong = Long.parseLong(id);
-            int phoneCodeInt = Integer.parseInt(phoneCode);
-            long phoneLong = Long.parseLong(phone);
-            int yearInt = Integer.parseInt(year);
-            int monthInt = Integer.parseInt(month);
-            int dayInt = Integer.parseInt(day);
+            long idLong = Long.parseLong(idStr.trim());
+            String firstname = firstnameStr.trim();
+            String lastname = lastnameStr.trim();
+            int yearInt = Integer.parseInt(yearStr.trim());
+            int monthInt = Integer.parseInt(monthStr.trim());
+            int dayInt = Integer.parseInt(dayStr.trim());
             LocalDate birthDate = LocalDate.of(yearInt, monthInt, dayInt);
+            int phoneCodeInt = Integer.parseInt(phoneCodeStr.trim());
+            long phoneLong = Long.parseLong(phoneStr.trim());
+            String country = countryStr.trim();
 
-            Passenger passenger = PassengerBuilder.build(idLong, firstname, lastname, birthDate, phoneCodeInt, phoneLong, country);
+            Passenger newPassenger = passengerFactory.build(idLong, firstname, lastname, birthDate, phoneCodeInt, phoneLong, country);
 
-            StoragePassenger storage = StoragePassenger.getInstance();
-            if (!storage.addPassenger(passenger)) {
-                return new Response("A Passenger with that id already exists", Status.BAD_REQUEST);
+            if (!passengerRepository.addPassenger(newPassenger)) {
+                return new Response("A Passenger with ID '" + idLong + "' already exists", Status.BAD_REQUEST);
             }
-            return new Response("Passenger created successfully", Status.CREATED);
+            
+            Passenger passengerCopy = passengerFactory.build(newPassenger.getId(), newPassenger.getFirstname(), newPassenger.getLastname(),
+                                                              newPassenger.getBirthDate(), newPassenger.getCountryPhoneCode(),
+                                                              newPassenger.getPhone(), newPassenger.getCountry());
+            return new Response("Passenger created successfully", Status.CREATED, passengerCopy);
+
+        } catch (NumberFormatException | java.time.DateTimeException ex) {
+            return new Response("Invalid format for numeric or date fields.", Status.BAD_REQUEST);
         } catch (Exception ex) {
-            return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+            return new Response("Unexpected error creating passenger: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public static Response updatePassenger(String id, String firstname, String lastname, String year, String month, String day, String phoneCode, String phone, String country) {
+    public Response updatePassenger(String idStr, String firstnameStr, String lastnameStr, String yearStr, String monthStr, String dayStr, String phoneCodeStr, String phoneStr, String countryStr) {
         try {
-            if (id == null || id.trim().isEmpty()) {
-                return new Response("User hasn't been selected yet", Status.NOT_FOUND);
+            if (idStr == null || idStr.trim().isEmpty()) { // Basic ID check before parsing
+                return new Response("Passenger ID for update must not be empty.", Status.BAD_REQUEST);
             }
-
-            long idLong = Long.parseLong(id);
-            StoragePassenger storage = StoragePassenger.getInstance();
-            Passenger passenger = storage.getPassenger(idLong);
+            long idLong = Long.parseLong(idStr.trim());
+            
+            Passenger passenger = passengerRepository.getPassenger(idLong);
             if (passenger == null) {
-                return new Response("Passenger not found", Status.NOT_FOUND);
+                return new Response("Passenger with ID '" + idLong + "' not found for update.", Status.NOT_FOUND);
             }
 
-            // Validación delegada
-            String Error = PassengerValidation.validatePassengerData(id, firstname, lastname, year, month, day, phoneCode, phone, country);
-            if (Error != null) {
-                return new Response(Error, Status.BAD_REQUEST);
+            // Validate *new* data. Note: validatePassengerData might re-check ID, which is fine.
+            String error = passengerValidator.validatePassengerData(idStr, firstnameStr, lastnameStr, yearStr, monthStr, dayStr, phoneCodeStr, phoneStr, countryStr);
+            if (error != null) {
+                return new Response(error, Status.BAD_REQUEST);
             }
 
-            // Conversión de datos
-            int yearInt = Integer.parseInt(year);
-            int monthInt = Integer.parseInt(month);
-            int dayInt = Integer.parseInt(day);
+            String firstname = firstnameStr.trim();
+            String lastname = lastnameStr.trim();
+            int yearInt = Integer.parseInt(yearStr.trim());
+            int monthInt = Integer.parseInt(monthStr.trim());
+            int dayInt = Integer.parseInt(dayStr.trim());
             LocalDate birthDate = LocalDate.of(yearInt, monthInt, dayInt);
-            int phoneCodeInt = Integer.parseInt(phoneCode);
-            long phoneLong = Long.parseLong(phone);
+            int phoneCodeInt = Integer.parseInt(phoneCodeStr.trim());
+            long phoneLong = Long.parseLong(phoneStr.trim());
+            String country = countryStr.trim();
 
-            // Actualización
             passenger.setFirstname(firstname);
             passenger.setLastname(lastname);
             passenger.setBirthDate(birthDate);
@@ -84,51 +96,51 @@ public class PassengerController {
             passenger.setPhone(phoneLong);
             passenger.setCountry(country);
 
-            return new Response("Passenger updated successfully", Status.CREATED);
+            passengerRepository.updatePassenger(passenger); // Explicit update call
 
+            Passenger passengerCopy = passengerFactory.build(passenger.getId(), passenger.getFirstname(), passenger.getLastname(),
+                                                              passenger.getBirthDate(), passenger.getCountryPhoneCode(),
+                                                              passenger.getPhone(), passenger.getCountry());
+            return new Response("Passenger updated successfully", Status.OK, passengerCopy);
+
+        } catch (NumberFormatException | java.time.DateTimeException ex) {
+            return new Response("Invalid format for numeric or date fields during update.", Status.BAD_REQUEST);
         } catch (Exception ex) {
-            return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+            return new Response("Unexpected error updating passenger: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public static Response getAllPassengersForTable() {
+    public Response getAllPassengersForTable() {
         try {
-            List<Passenger> passengers = StoragePassenger.getInstance().getAllPassengers();
-            // The getAllPassengers method in storage should already return a sorted copy.
+            List<Passenger> passengers = passengerRepository.getAllPassengers();
             if (passengers.isEmpty()) {
-                // It's okay to return an empty list; the view can handle it.
-                return new Response("No passengers found.", Status.OK, new ArrayList<Passenger>());
+                return new Response("No passengers found.", Status.OK, new ArrayList<>());
             }
-            return new Response("Passengers retrieved successfully.", Status.OK, passengers);
+            return new Response("Passengers retrieved successfully.", Status.OK, new ArrayList<>(passengers));
         } catch (Exception ex) {
-            // ex.printStackTrace();
             return new Response("Error retrieving passengers: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public static Response getFlightsForPassengerTable(String passengerId) {
+    public Response getFlightsForPassengerTable(String passengerIdStr) {
         try {
-            if (passengerId == null || passengerId.trim().isEmpty()) {
+            if (passengerIdStr == null || passengerIdStr.trim().isEmpty()) {
                 return new Response("Passenger ID must not be empty.", Status.BAD_REQUEST);
             }
-            long idLong;
-            try {
-                idLong = Long.parseLong(passengerId);
-            } catch (NumberFormatException e) {
-                return new Response("Passenger ID must be a numeric value.", Status.BAD_REQUEST);
-            }
+            long idLong = Long.parseLong(passengerIdStr.trim());
 
-            Passenger passenger = StoragePassenger.getInstance().getPassenger(idLong);
+            Passenger passenger = passengerRepository.getPassenger(idLong);
             if (passenger == null) {
-                return new Response("Passenger not found with ID: " + passengerId, Status.NOT_FOUND);
+                return new Response("Passenger not found with ID: " + idLong, Status.NOT_FOUND);
             }
-            List<Flight> flights = passenger.getFlights2(); // This method in Passenger should return a sorted copy.
+            List<Flight> flights = passenger.getFlights2(); // Using getFlights2 as per your controller
             if (flights.isEmpty()) {
-                return new Response("No flights found for this passenger.", Status.OK, new ArrayList<Flight>());
+                return new Response("No flights found for this passenger.", Status.OK, new ArrayList<>());
             }
-            return new Response("Passenger flights retrieved successfully.", Status.OK, flights);
+            return new Response("Passenger flights retrieved successfully.", Status.OK, new ArrayList<>(flights));
+        } catch (NumberFormatException e) {
+            return new Response("Passenger ID must be a numeric value.", Status.BAD_REQUEST);
         } catch (Exception ex) {
-            // ex.printStackTrace();
             return new Response("Error retrieving passenger flights: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }

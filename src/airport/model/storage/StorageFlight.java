@@ -1,61 +1,40 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package airport.model.storage;
 
 import airport.model.Flight;
+import airport.controller.interfaces.IFlightRepository; // Corrected package for interface
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
-/**
- *
- * @author Juan Sebastian
- */
-public class StorageFlight {
+public class StorageFlight implements IFlightRepository {
+    private final ArrayList<Flight> flights;
 
-    private static StorageFlight instance;
-    private ArrayList<Flight> flights;
-
-    public static StorageFlight getInstance() {
-        if (instance == null) {
-            instance = new StorageFlight();
-        }
-        return instance;
-    }
-
-    private StorageFlight() {
+    public StorageFlight() {
         this.flights = new ArrayList<>();
     }
 
+    @Override
     public boolean addFlight(Flight flight) {
-        for (Flight f : this.flights) {
-            if ((f.getId()).equals(flight.getId())) {
-                return false;
-            }
+        if (flights.stream().anyMatch(f -> f.getId().equals(flight.getId()))) {
+            return false;
         }
         this.flights.add(flight);
         return true;
     }
 
+    @Override
     public Flight getFlight(String id) {
-        for (Flight flight : this.flights) {
-            if (flight.getId().equals(id)) {
-                return flight;
-            }
-        }
-        return null;
+        Optional<Flight> flightOpt = flights.stream()
+                                            .filter(f -> f.getId().equals(id))
+                                            .findFirst();
+        return flightOpt.orElse(null);
     }
 
-    public ArrayList<Flight> getFlights() {
-        return flights;
-    }
-
+    @Override
     public List<Flight> getAllFlights() {
-        // Sort by departure date: "Los vuelos se deben obtener de manera ordenada (respecto a su fecha de salida, de los más antiguos a los más nuevos)."
         ArrayList<Flight> sortedFlights = new ArrayList<>(this.flights);
         sortedFlights.sort(Comparator.comparing(Flight::getDepartureDate));
-        return sortedFlights; // Return the sorted copy
+        return sortedFlights;
     }
 }

@@ -1,57 +1,40 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package airport.model.storage;
 
 import airport.model.Location;
+import airport.controller.interfaces.ILocationRepository; // Corrected package for interface
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
-/**
- *
- * @author Juan Sebastian
- */
-public class StorageLocation {
+public class StorageLocation implements ILocationRepository {
+    private final ArrayList<Location> locations;
 
-    private static StorageLocation instance;
-    private ArrayList<Location> locations;
-
-    public static StorageLocation getInstance() {
-        if (instance == null) {
-            instance = new StorageLocation();
-        }
-        return instance;
-    }
-
-    private StorageLocation() {
+    public StorageLocation() {
         this.locations = new ArrayList<>();
     }
 
-    public boolean addLocation(Location local) {
-        for (Location l : this.locations) {
-            if (l.getAirportId().equals(local.getAirportId())) {
-                return false;
-            }
+    @Override
+    public boolean addLocation(Location locationToAdd) {
+        if (locations.stream().anyMatch(loc -> loc.getAirportId().equals(locationToAdd.getAirportId()))) {
+            return false; 
         }
-        this.locations.add(local);
+        this.locations.add(locationToAdd);
         return true;
     }
 
+    @Override
     public Location getLocation(String id) {
-        for (Location location : this.locations) {
-            if (location.getAirportId().equals(id)) {
-                return location;
-            }
-        }
-        return null;
+        Optional<Location> locationOpt = locations.stream()
+                                              .filter(loc -> loc.getAirportId().equals(id))
+                                              .findFirst();
+        return locationOpt.orElse(null);
     }
 
+    @Override
     public List<Location> getAllLocations() {
-        // Sort by ID: "Los aeropuertos (localizaciones) se deben obtener de manera ordenada (respecto a su id)."
         ArrayList<Location> sortedLocations = new ArrayList<>(this.locations);
         sortedLocations.sort(Comparator.comparing(Location::getAirportId));
-        return sortedLocations; // Return the sorted copy
+        return sortedLocations;
     }
 }

@@ -1,54 +1,66 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package airport.controller;
 
 import airport.controller.utils.Response;
 import airport.controller.utils.Status;
-import airport.controller.validation.PlaneValidation;
-import airport.controller.builder.PlaneBuilder;
 import airport.model.Plane;
-import airport.model.storage.StoragePlane;
+import airport.controller.interfaces.IPlaneRepository;
+import airport.controller.interfaces.IPlaneValidator;
+import airport.controller.interfaces.IPlaneFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Juan Sebastian
- */
 public class PlaneController {
+    private final IPlaneRepository planeRepository;
+    private final IPlaneValidator planeValidator;
+    private final IPlaneFactory planeFactory;
 
-    public static Response CreatePlane(String id, String brand, String model, String maxCapacity, String airline) {
+    public PlaneController(IPlaneRepository planeRepository,
+                           IPlaneValidator planeValidator,
+                           IPlaneFactory planeFactory) {
+        this.planeRepository = planeRepository;
+        this.planeValidator = planeValidator;
+        this.planeFactory = planeFactory;
+    }
+
+    public Response createPlane(String idStr, String brandStr, String modelStr, String maxCapacityStr, String airlineStr) { // Renamed for convention
         try {
-            String Error = PlaneValidation.validatePlaneData(id, brand, model, maxCapacity, airline);
-            if (Error != null) {
-                return new Response(Error, Status.BAD_REQUEST);
+            String error = planeValidator.validatePlaneData(idStr, brandStr, modelStr, maxCapacityStr, airlineStr);
+            if (error != null) {
+                return new Response(error, Status.BAD_REQUEST);
             }
 
-            int capacity = Integer.parseInt(maxCapacity);
-            Plane plane = PlaneBuilder.createPlane(id, brand, model, capacity, airline);
-            StoragePlane storage = StoragePlane.getInstance();
-            
-            if (!storage.addPlane(plane)) {
-                return new Response("A plane with that id already exists", Status.BAD_REQUEST);
+            String id = idStr.trim();
+            String brand = brandStr.trim();
+            String model = modelStr.trim();
+            int capacity = Integer.parseInt(maxCapacityStr.trim());
+            String airline = airlineStr.trim();
+
+            Plane newPlane = planeFactory.createPlane(id, brand, model, capacity, airline);
+
+            if (!planeRepository.addPlane(newPlane)) {
+                return new Response("A plane with ID '" + id + "' already exists", Status.BAD_REQUEST);
             }
-            return new Response("Airplane created successfully", Status.CREATED);
+
+            Plane planeCopy = planeFactory.createPlane(newPlane.getId(), newPlane.getBrand(), newPlane.getModel(),
+                                                      newPlane.getMaxCapacity(), newPlane.getAirline());
+            return new Response("Airplane created successfully", Status.CREATED, planeCopy);
+
+        } catch (NumberFormatException ex) {
+            return new Response("Invalid numeric format for capacity.", Status.BAD_REQUEST);
         } catch (Exception ex) {
-            return new Response("Unexpected error", Status.INTERNAL_SERVER_ERROR);
+            return new Response("Unexpected error creating plane: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public static Response getAllPlanesForTable() {
+    public Response getAllPlanesForTable() {
         try {
-            List<Plane> planes = StoragePlane.getInstance().getAllPlanes();
-            // Storage should return sorted copy
+            List<Plane> planes = planeRepository.getAllPlanes();
             if (planes.isEmpty()) {
-                return new Response("No planes found.", Status.OK, new ArrayList<Plane>());
+                return new Response("No planes found.", Status.OK, new ArrayList<>());
             }
-            return new Response("Planes retrieved successfully.", Status.OK, planes);
+            return new Response("Planes retrieved successfully.", Status.OK, new ArrayList<>(planes));
         } catch (Exception ex) {
-            // ex.printStackTrace();
             return new Response("Error retrieving planes: " + ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
         }
     }
